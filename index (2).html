@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мария Колесникова — репетитор английского</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="shortcut icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --paper:#F5F3EC;
+    --paper-2:#EFEDE3;
+    --ink:#20304D;
+    --ink-soft:#4A5A73;
+    --rule:#C7D2DE;
+    --red:#B23A2E;
+    --highlight:#F2C94C;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.55;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    margin:0 0 .4em;
+    color:var(--ink);
+  }
+  p{margin:0 0 1em;color:var(--ink-soft);}
+  a{color:inherit;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  section{padding:72px 0;}
+
+  /* header */
+  header{
+    position:sticky;top:0;z-index:20;
+    background:rgba(245,243,236,.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--rule);
+  }
+  header .wrap{display:flex;align-items:center;justify-content:space-between;padding-top:16px;padding-bottom:16px;}
+  .brand{font-family:'Fraunces',serif;font-size:1.25rem;font-style:italic;}
+  nav{display:flex;gap:28px;}
+  nav a{text-decoration:none;font-size:.95rem;color:var(--ink-soft);border-bottom:1px solid transparent;padding-bottom:2px;}
+  nav a:hover,nav a:focus-visible{border-color:var(--red);color:var(--ink);}
+  .btn{
+    display:inline-block;background:var(--red);color:#fff;text-decoration:none;
+    padding:11px 22px;border-radius:3px;font-weight:500;border:none;cursor:pointer;
+    font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;
+  }
+  .btn:hover{background:#96301F;}
+  .btn:focus-visible,a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:2px solid var(--ink);outline-offset:2px;
+  }
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--ink);}
+  .btn-ghost:hover{background:var(--ink);color:#fff;}
+
+  /* hero */
+  .hero .wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding-top:56px;}
+  .hero h1{font-size:clamp(2.1rem,4vw,3rem);line-height:1.15;}
+  .hero p.lead{font-size:1.1rem;max-width:44ch;}
+  .hero-actions{display:flex;gap:14px;margin-top:28px;flex-wrap:wrap;}
+  .hero-note{margin-top:18px;font-size:.88rem;color:var(--ink-soft);}
+  .sheet{background:var(--card);border:1px solid var(--rule);border-radius:2px;box-shadow:0 1px 0 var(--rule);}
+
+  /* about */
+  .about .wrap{display:grid;grid-template-columns:220px 1fr;gap:48px;}
+  .portrait{
+    width:220px;height:220px;border-radius:3px;background:var(--paper-2);
+    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+    font-family:'Fraunces',serif;font-style:italic;border:1px solid var(--rule);
+  }
+  .facts{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px;}
+  .facts li{padding-left:22px;position:relative;color:var(--ink-soft);}
+  .facts li::before{content:"—";position:absolute;left:0;color:var(--red);}
+
+  /* programs */
+  .programs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:var(--rule);border:1px solid var(--rule);margin-top:32px;}
+  .program{background:var(--card);padding:26px 28px;}
+  .program h3{font-size:1.15rem;margin-bottom:.3em;}
+  .program .lvl{display:inline-block;font-size:.78rem;color:var(--red);margin-bottom:10px;}
+
+  /* schedule */
+  .schedule-wrap{overflow-x:auto;margin-top:32px;border:1px solid var(--rule);border-radius:2px;}
+  table{border-collapse:collapse;width:100%;min-width:640px;background:var(--card);}
+  th,td{border:1px solid var(--rule);padding:0;text-align:center;}
+  th{background:var(--paper-2);font-weight:500;font-size:.9rem;padding:10px 6px;color:var(--ink-soft);}
+  td.time{background:var(--paper-2);font-size:.85rem;color:var(--ink-soft);padding:10px 6px;white-space:nowrap;}
+  .slot{
+    width:100%;height:100%;padding:14px 6px;border:none;background:transparent;cursor:pointer;
+    font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;color:var(--ink);
+  }
+  .slot.free:hover{background:#EFF6F0;}
+  .slot.free::after{content:"свободно";display:block;font-size:.72rem;color:#3E7A4A;margin-top:2px;}
+  .slot.taken{color:#B8B4A9;cursor:not-allowed;}
+  .slot.taken::after{content:"занято";display:block;font-size:.72rem;color:#B8B4A9;margin-top:2px;}
+  .slot.selected{background:var(--highlight);}
+  .legend{display:flex;gap:22px;margin-top:12px;font-size:.85rem;color:var(--ink-soft);}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;}
+
+  /* booking */
+  .booking .wrap{display:grid;grid-template-columns:1fr 1fr;gap:56px;}
+  form{display:grid;gap:16px;margin-top:24px;}
+  label{font-size:.88rem;color:var(--ink-soft);display:block;margin-bottom:6px;}
+  input,select,textarea{
+    width:100%;padding:11px 12px;border:1px solid var(--rule);border-radius:2px;
+    background:var(--card);font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:80px;}
+  #selectedSlot{background:var(--paper-2);color:var(--ink-soft);}
+  .form-status{margin-top:14px;font-size:.9rem;}
+  .form-status.ok{color:#3E7A4A;}
+  .form-status.err{color:var(--red);}
+
+  /* testimonials */
+  .quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:32px;}
+  blockquote{margin:0;padding-left:16px;border-left:2px solid var(--red);}
+  blockquote p{color:var(--ink);font-style:italic;}
+  cite{font-style:normal;font-size:.85rem;color:var(--ink-soft);}
+
+  footer{border-top:1px solid var(--rule);padding:36px 0;font-size:.85rem;color:var(--ink-soft);}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+
+  @media (max-width:820px){
+    .hero .wrap,.about .wrap,.booking .wrap{grid-template-columns:1fr;}
+    .programs-grid,.quotes{grid-template-columns:1fr;}
+    nav{display:none;}
+    section{padding:52px 0;}
+  }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">Мария Колесникова</div>
+    <nav>
+      <a href="#about">Обо мне</a>
+      <a href="#programs">Форматы</a>
+      <a href="#schedule">Расписание</a>
+      <a href="#booking">Запись</a>
+    </nav>
+    <a href="#booking" class="btn">Записаться</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Английский, который остаётся с вами после урока</h1>
+      <p class="lead">Индивидуальные занятия для тех, кто готовился «завтра начать» уже слишком долго. Разговорная практика, разбор ошибок и понятный план — без учебников ради галочки.</p>
+      <div class="hero-actions">
+        <a href="#schedule" class="btn">Выбрать время</a>
+        <a href="#about" class="btn btn-ghost">Как проходят занятия</a>
+      </div>
+      <p class="hero-note">Первое занятие — 30 минут, чтобы понять уровень и цель. Бесплатно.</p>
+    </div>
+    <div class="sheet" style="padding:20px;">
+      <svg viewBox="0 0 360 300" width="100%" height="auto" role="img" aria-label="Страница с исправлением: she don't like заменено на she doesn't like">
+        <rect x="0" y="0" width="360" height="300" fill="#FFFFFF"/>
+        <line x1="24" y1="60" x2="336" y2="60" stroke="#E3E7EC" stroke-width="1"/>
+        <line x1="24" y1="100" x2="336" y2="100" stroke="#E3E7EC" stroke-width="1"/>
+        <line x1="24" y1="140" x2="336" y2="140" stroke="#E3E7EC" stroke-width="1"/>
+        <line x1="24" y1="180" x2="336" y2="180" stroke="#E3E7EC" stroke-width="1"/>
+        <line x1="24" y1="220" x2="336" y2="220" stroke="#E3E7EC" stroke-width="1"/>
+        <text x="24" y="94" font-family="IBM Plex Sans" font-size="17" fill="#20304D">She </text>
+        <text x="60" y="94" font-family="IBM Plex Sans" font-size="17" fill="#20304D" text-decoration="line-through">don't</text>
+        <line x1="58" y1="88" x2="102" y2="88" stroke="#B23A2E" stroke-width="1.4"/>
+        <text x="60" y="76" font-family="Fraunces" font-style="italic" font-size="16" fill="#B23A2E">doesn't</text>
+        <text x="130" y="94" font-family="IBM Plex Sans" font-size="17" fill="#20304D">like Mondays.</text>
+        <path d="M270 84 l8 10 l16 -20" stroke="#3E7A4A" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="24" y="134" font-family="IBM Plex Sans" font-size="17" fill="#20304D">I have been living here</text>
+        <text x="24" y="174" font-family="IBM Plex Sans" font-size="17" fill="#20304D">since three years.</text>
+        <line x1="150" y1="164" x2="196" y2="164" stroke="#B23A2E" stroke-width="1.4"/>
+        <text x="150" y="152" font-family="Fraunces" font-style="italic" font-size="16" fill="#B23A2E">for</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div class="wrap">
+    <div class="portrait">фото</div>
+    <div>
+      <h2>Обо мне</h2>
+      <p>Преподаю английский 8 лет — от подготовки к IELTS и собеседованиям до разговорной практики для переезда. Работаю без «универсальной программы»: план строится вокруг того, зачем вам нужен язык прямо сейчас.</p>
+      <ul class="facts">
+        <li>Уровни от Elementary до Advanced</li>
+        <li>Подготовка к IELTS, Cambridge (FCE/CAE)</li>
+        <li>Business English и собеседования</li>
+        <li>Занятия онлайн, 60 или 90 минут</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="programs">
+  <div class="wrap">
+    <h2>Форматы занятий</h2>
+    <p>Выберите то, что ближе к вашей цели — программу можно поменять в любой момент.</p>
+    <div class="programs-grid">
+      <div class="program"><span class="lvl">Разговорный клуб</span><h3>Свободная речь</h3><p>Снимаем страх говорить: темы из жизни, обратная связь по ошибкам сразу, без домашних сочинений.</p></div>
+      <div class="program"><span class="lvl">Экзамены</span><h3>IELTS / Cambridge</h3><p>Стратегии по каждой части экзамена, разбор пробных тестов, работа над слабыми местами.</p></div>
+      <div class="program"><span class="lvl">Для работы</span><h3>Business English</h3><p>Письма, переговоры, презентации и small talk с коллегами — на реальных рабочих ситуациях.</p></div>
+      <div class="program"><span class="lvl">С нуля</span><h3>Base English</h3><p>Грамматика и словарный запас без перегруза — по одной теме за раз, с закреплением на практике.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="schedule">
+  <div class="wrap">
+    <h2>Расписание на неделю</h2>
+    <p>Нажмите на свободный слот — он подставится в форму записи ниже.</p>
+    <div class="schedule-wrap">
+      <table id="scheduleTable" aria-label="Расписание доступных занятий"></table>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#3E7A4A"></span>свободно</span>
+      <span><span class="dot" style="background:#B8B4A9"></span>занято</span>
+      <span><span class="dot" style="background:#F2C94C"></span>выбрано</span>
+    </div>
+  </div>
+</section>
+
+<section class="booking" id="booking">
+  <div class="wrap">
+    <div>
+      <h2>Записаться на занятие</h2>
+      <p>Заполните форму — заявка сразу придёт мне в Telegram, и я отвечу вам в течение дня, чтобы подтвердить время.</p>
+      <p class="hero-note">Если вам удобнее — напишите напрямую: <a href="https://t.me/your_telegram_username" target="_blank" rel="noopener">@your_telegram_username</a></p>
+    </div>
+    <form id="bookingForm">
+      <div>
+        <label for="name">Имя</label>
+        <input id="name" name="name" required autocomplete="name">
+      </div>
+      <div>
+        <label for="contact">Телеграм или телефон для связи</label>
+        <input id="contact" name="contact" required placeholder="@username или +372...">
+      </div>
+      <div>
+        <label for="selectedSlot">Выбранное время</label>
+        <input id="selectedSlot" name="selectedSlot" readonly placeholder="Выберите слот в расписании выше">
+      </div>
+      <div>
+        <label for="level">Уровень / цель</label>
+        <select id="level" name="level">
+          <option>Начальный (A1–A2)</option>
+          <option>Средний (B1–B2)</option>
+          <option>Продвинутый (C1+)</option>
+          <option>Подготовка к экзамену</option>
+          <option>Не уверен(а), нужна консультация</option>
+        </select>
+      </div>
+      <div>
+        <label for="message">Комментарий (необязательно)</label>
+        <textarea id="message" name="message" placeholder="Например: хочу подготовиться к собеседованию через месяц"></textarea>
+      </div>
+      <button type="submit" class="btn">Отправить заявку</button>
+      <div class="form-status" id="formStatus" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+</section>
+
+<section id="reviews">
+  <div class="wrap">
+    <h2>Отзывы</h2>
+    <div class="quotes">
+      <blockquote><p>За три месяца перестала бояться звонков на английском — раньше готовила фразы заранее, теперь просто говорю.</p><cite>— Марина, B1→B2</cite></blockquote>
+      <blockquote><p>Разобрали именно те ошибки, которые я делаю в реальной переписке с клиентами, а не абстрактную грамматику.</p><cite>— Игорь, Business English</cite></blockquote>
+      <blockquote><p>Сдал Cambridge FCE с первого раза — план подготовки был под мои слабые места, а не общий шаблон.</p><cite>— Даниил, экзамен</cite></blockquote>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Мария Колесникова · Английский язык</span>
+    <span><a href="https://t.me/your_telegram_username" target="_blank" rel="noopener">Telegram</a> · maria@example.com</span>
+  </div>
+</footer>
+
+<script>
+/* ===== НАСТРОЙКИ TELEGRAM =====
+   1) Создайте бота через @BotFather в Telegram — получите TELEGRAM_BOT_TOKEN.
+   2) Напишите боту любое сообщение, затем откройте в браузере:
+      https://api.telegram.org/bot<ВАШ_ТОКЕН>/getUpdates
+      и найдите там "chat":{"id": ...} — это TELEGRAM_CHAT_ID.
+   3) Вставьте оба значения ниже. */
+const TELEGRAM_BOT_TOKEN = '8720251486:AAGc9Hr2Yqz3sGlV85GRJXyRoPHEuGnDGEU';
+const TELEGRAM_CHAT_ID   = '849825835';
+
+const schedule = [
+  {day:'Пн', slots:[['10:00',true],['14:00',false],['17:00',true],['19:00',true]]},
+  {day:'Вт', slots:[['10:00',false],['14:00',true],['17:00',true],['19:00',false]]},
+  {day:'Ср', slots:[['10:00',true],['14:00',true],['17:00',false],['19:00',true]]},
+  {day:'Чт', slots:[['10:00',false],['14:00',true],['17:00',true],['19:00',true]]},
+  {day:'Пт', slots:[['10:00',true],['14:00',false],['17:00',true],['19:00',false]]},
+  {day:'Сб', slots:[['11:00',true],['13:00',true],['15:00',false],['—',false]]}
+];
+const times = ['10:00 / 11:00','14:00 / 13:00','17:00 / 15:00','19:00'];
+
+function renderSchedule(){
+  const table = document.getElementById('scheduleTable');
+  let head = '<tr><th>Время</th>' + schedule.map(d=>`<th>${d.day}</th>`).join('') + '</tr>';
+  let rows = '';
+  for(let r=0;r<4;r++){
+    rows += '<tr>';
+    rows += `<td class="time">${['10:00','14:00','17:00','19:00'][r]}</td>`;
+    schedule.forEach((d,ci)=>{
+      const [time,free] = d.slots[r];
+      if(time==='—'){ rows += '<td></td>'; return; }
+      const cls = free ? 'free' : 'taken';
+      rows += `<td><button type="button" class="slot ${cls}" data-day="${d.day}" data-time="${time}" ${free?'':'disabled'}>${time}</button></td>`;
+    });
+    rows += '</tr>';
+  }
+  table.innerHTML = head + rows;
+
+  table.querySelectorAll('.slot.free').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      table.querySelectorAll('.slot.selected').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      const input = document.getElementById('selectedSlot');
+      input.value = `${btn.dataset.day}, ${btn.dataset.time}`;
+      document.getElementById('booking').scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+}
+renderSchedule();
+
+document.getElementById('bookingForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const status = document.getElementById('formStatus');
+  const data = Object.fromEntries(new FormData(e.target).entries());
+
+  if(!data.name || !data.contact){
+    status.textContent = 'Заполните имя и контакт для связи.';
+    status.className = 'form-status err';
+    return;
+  }
+
+  const text =
+`📩 Новая заявка с сайта
+Имя: ${data.name}
+Контакт: ${data.contact}
+Время: ${data.selectedSlot || 'не выбрано, обсудить'}
+Уровень/цель: ${data.level}
+Комментарий: ${data.message || '—'}`;
+
+  status.textContent = 'Отправляю...';
+  status.className = 'form-status';
+
+  if(TELEGRAM_BOT_TOKEN.includes('PASTE_')){
+    status.textContent = 'Бот ещё не настроен: вставьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в коде сайта.';
+    status.className = 'form-status err';
+    return;
+  }
+
+  try{
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text})
+    });
+    if(!res.ok) throw new Error('Telegram API error');
+    status.textContent = 'Заявка отправлена! Я отвечу вам в Telegram в течение дня.';
+    status.className = 'form-status ok';
+    e.target.reset();
+    document.querySelectorAll('.slot.selected').forEach(b=>b.classList.remove('selected'));
+  }catch(err){
+    status.textContent = 'Не получилось отправить. Попробуйте ещё раз или напишите напрямую в Telegram.';
+    status.className = 'form-status err';
+  }
+});
+</script>
+</body>
+</html>
