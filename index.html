@@ -235,7 +235,7 @@
   <div class="wrap">
     <div>
       <h2>Записаться на занятие</h2>
-      <p>Заполните форму — заявка сразу придёт мне в Telegram, и я отвечу вам в течение дня, чтобы подтвердить время.</p>
+      <p>Онлайн-запись временно недоступна. Расписание можно посмотреть ниже; отправка заявок будет доступна после обновления сайта.</p>
       <p class="hero-note">Если вам удобнее — напишите напрямую: <a href="https://t.me/your_telegram_username" target="_blank" rel="noopener">@your_telegram_username</a></p>
     </div>
     <form id="bookingForm">
@@ -290,14 +290,7 @@
 </footer>
 
 <script>
-/* ===== НАСТРОЙКИ TELEGRAM =====
-   1) Создайте бота через @BotFather в Telegram — получите TELEGRAM_BOT_TOKEN.
-   2) Напишите боту любое сообщение, затем откройте в браузере:
-      https://api.telegram.org/bot<ВАШ_ТОКЕН>/getUpdates
-      и найдите там "chat":{"id": ...} — это TELEGRAM_CHAT_ID.
-   3) Вставьте оба значения ниже. */
-const TELEGRAM_BOT_TOKEN = '8720251486:AAGc9Hr2Yqz3sGlV85GRJXyRoPHEuGnDGEU';
-const TELEGRAM_CHAT_ID   = '849825835';
+/* Отправка заявок отключена до подключения защищённого серверного обработчика. */
 
 const schedule = [
   {day:'Пн', slots:[['10:00',true],['14:00',false],['17:00',true],['19:00',true]]},
@@ -338,50 +331,10 @@ function renderSchedule(){
 }
 renderSchedule();
 
-document.getElementById('bookingForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const status = document.getElementById('formStatus');
-  const data = Object.fromEntries(new FormData(e.target).entries());
-
-  if(!data.name || !data.contact){
-    status.textContent = 'Заполните имя и контакт для связи.';
-    status.className = 'form-status err';
-    return;
-  }
-
-  const text =
-`📩 Новая заявка с сайта
-Имя: ${data.name}
-Контакт: ${data.contact}
-Время: ${data.selectedSlot || 'не выбрано, обсудить'}
-Уровень/цель: ${data.level}
-Комментарий: ${data.message || '—'}`;
-
-  status.textContent = 'Отправляю...';
-  status.className = 'form-status';
-
-  if(TELEGRAM_BOT_TOKEN.includes('PASTE_')){
-    status.textContent = 'Бот ещё не настроен: вставьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в коде сайта.';
-    status.className = 'form-status err';
-    return;
-  }
-
-  try{
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text})
-    });
-    if(!res.ok) throw new Error('Telegram API error');
-    status.textContent = 'Заявка отправлена! Я отвечу вам в Telegram в течение дня.';
-    status.className = 'form-status ok';
-    e.target.reset();
-    document.querySelectorAll('.slot.selected').forEach(b=>b.classList.remove('selected'));
-  }catch(err){
-    status.textContent = 'Не получилось отправить. Попробуйте ещё раз или напишите напрямую в Telegram.';
-    status.className = 'form-status err';
-  }
-});
+const bookingForm = document.getElementById('bookingForm');
+bookingForm.addEventListener('submit', e => e.preventDefault());
+bookingForm.querySelector('button[type="submit"]').disabled = true;
+document.getElementById('formStatus').textContent = 'Онлайн-запись временно недоступна.';
 </script>
 </body>
 </html>
