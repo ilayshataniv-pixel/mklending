@@ -1,5 +1,13 @@
-import { mkdir, copyFile, cp } from 'node:fs/promises';
-await mkdir(new URL('./public/', import.meta.url), { recursive: true });
-for (const name of ['index.html', 'app.js', 'schedule-ui.js', 'admin.html', 'admin.js', 'schedule.mjs']) await copyFile(new URL(name, import.meta.url), new URL(`public/${name}`, import.meta.url));
+import { mkdir, copyFile, cp, rm } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('./', import.meta.url));
+const output = path.resolve(root, 'public');
+if (path.dirname(output) !== path.resolve(root) || path.basename(output) !== 'public') throw new Error('Invalid output directory');
+await rm(output, { recursive: true, force: true });
+await mkdir(output, { recursive: true });
+for (const name of ['index.html', 'app.js', 'site.css', 'schedule-ui.js', 'admin.html', 'admin.css', 'admin.js', 'schedule.mjs']) await copyFile(new URL(name, import.meta.url), new URL(`public/${name}`, import.meta.url));
 await cp(new URL('./images/', import.meta.url), new URL('./public/images/', import.meta.url), { recursive: true });
+await import('./check-secrets.mjs');
+if (process.exitCode) throw new Error('Secret scan failed; do not publish this build');
 console.log('Static files prepared in public/');

@@ -1,7 +1,8 @@
 import { scheduleApi } from './schedule-api.mjs';
 import { readSchedule, publicWeek, weekStart, validDate, localNow, addDays } from './schedule.mjs';
+import { secureResponse } from './security.mjs';
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
-export default {
+const handler = {
   async fetch(request, env) {
     const url = new URL(request.url);
     const scheduleResponse = await scheduleApi(request, env);
@@ -14,7 +15,7 @@ export default {
       if (request.method !== 'POST') return json({ ok: false }, 405);
       if (request.headers.get('Origin') !== url.origin) return json({ ok: false }, 403);
       if (!enabled) return json({ ok: false }, 503);
-      if (!(request.headers.get('Content-Type') || '').startsWith('application/json')) return json({ ok: false }, 415);
+      if ((request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase() !== 'application/json') return json({ ok: false }, 415);
       const ip = request.headers.get('CF-Connecting-IP');
       if (!ip) return json({ ok: false }, 503);
       const limit = await env.BOOKING_LIMITER.limit({ key: ip });
@@ -43,9 +44,11 @@ export default {
         if (typeof data[key] !== 'string' || data[key].length > max) return json({ ok: false }, 400);
       }
       if (!data.name.trim() || !data.contact.trim() || data.consent !== 'on') return json({ ok: false }, 400);
+      if (['name', 'contact', 'goal'].some(field => /[\u0000-\u001f\u007f]/.test(data[field]))) return json({ ok: false }, 400);
+      if (!['Для жизни и общения', 'Для работы', 'Подготовка к экзамену', 'Хочу начать с основ', 'Пока не знаю — обсудим'].includes(data.goal)) return json({ ok: false }, 400);
       let selectedSlot = 'Время согласовать лично';
       if (data.slotDate || data.slotTime) {
-        if (!validDate(data.slotDate) || typeof data.slotTime !== 'string') return json({ ok: false }, 400);
+        if (!validDate(data.slotDate) || typeof data.slotTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(data.slotTime)) return json({ ok: false }, 400);
         try {
           const saved = await readSchedule(env);
           if (!saved) return json({ ok: false }, 503);
@@ -60,7 +63,7 @@ export default {
       try {
         const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text }), signal: AbortSignal.timeout(10000)
+          body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, link_preview_options: { is_disabled: true } }), signal: AbortSignal.timeout(10000)
         });
         const result = await response.json();
         if (!response.ok || result.ok !== true) return json({ ok: false }, 502);
@@ -69,5 +72,17 @@ export default {
     }
     if (url.pathname.startsWith('/api/')) return json({ ok: false }, 404);
     return env.ASSETS.fetch(request);
+  }
+};
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const admin = url.pathname.startsWith('/api/admin/') || url.pathname === '/admin.html' || url.pathname === '/admin.js';
+    if (url.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
+      url.protocol = 'https:';
+      return secureResponse(new Response(null, { status: 308, headers: { Location: url.href } }), admin);
+    }
+    try { return secureResponse(await handler.fetch(request, env), admin); }
+    catch { return secureResponse(json({ ok: false }, 503), admin); }
   }
 };

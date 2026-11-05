@@ -2,5 +2,11 @@ public/
 .wrangler/
 node_modules/
 .dev.vars
+.dev.vars.*
 .env
 .env.*
+!.env.example
+*.pem
+*.key
+*.p12
+.secrets/

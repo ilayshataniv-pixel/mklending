@@ -29,7 +29,7 @@ export async function scheduleApi(request, env) {
     if (request.method === 'GET') return json(await readSchedule(env) || { data: { repeat: false, timeZone: 'Asia/Irkutsk', template: [], weeks: {} }, revision: 0 });
     if (request.method !== 'PUT') return json({ error: 'method' }, 405);
     if (request.headers.get('Origin') !== url.origin) return json({ error: 'origin' }, 403);
-    if (!(request.headers.get('Content-Type') || '').startsWith('application/json')) return json({ error: 'type' }, 415);
+    if ((request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase() !== 'application/json') return json({ error: 'type' }, 415);
     const reader = request.body?.getReader(); if (!reader) return json({ error: 'body' }, 400);
     const chunks = []; let size = 0;
     while (true) { const { value, done } = await reader.read(); if (done) break; size += value.byteLength; if (size > 500000) { await reader.cancel(); return json({ error: 'size' }, 413); } chunks.push(value); }
