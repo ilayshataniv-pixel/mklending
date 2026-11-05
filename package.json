@@ -1,0 +1,10 @@
+{
+  "name": "mklending",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test worker.test.mjs schedule.test.mjs security.test.mjs",
+    "build": "node prepare.mjs",
+    "security:check": "node check-secrets.mjs"
+  }
+}
