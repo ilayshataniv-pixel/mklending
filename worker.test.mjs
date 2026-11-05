@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.mjs';
+import { weekStart, localNow, addDays } from './schedule.mjs';
 const valid = { name: 'Тест', contact: '@example', goal: 'Для работы', message: '', consent: 'on', website: '' };
 const env = () => ({ TELEGRAM_BOT_TOKEN: 'test-token', TELEGRAM_CHAT_ID: 'test-chat', BOOKING_LIMITER: { limit: async () => ({ success: true }) } });
 const request = (data = valid, origin = 'https://example.com') => new Request('https://example.com/api/booking', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1' }, body: JSON.stringify(data) });
@@ -32,5 +33,21 @@ test('honeypot does not send and Telegram must confirm success', async () => {
     assert.equal(calls, 1);
     globalThis.fetch = async () => Response.json({ ok: false });
     assert.equal((await worker.fetch(request(), env())).status, 502);
+  } finally { globalThis.fetch = originalFetch; }
+});
+test('booking rejects unavailable time and sends the selected date with timezone', async () => {
+  const week = weekStart(localNow('Asia/Irkutsk').slice(0,10));
+  const date = addDays(week, 7);
+  const data = { repeat:false,timeZone:'Asia/Irkutsk',template:[],weeks:{ [date]:[{day:0,time:'19:00',status:'free'}] } };
+  const bindings = env(); bindings.DB = { prepare: () => ({ first: async () => ({ data:JSON.stringify(data),revision:1 }) }) };
+  const originalFetch = globalThis.fetch; let sent = '';
+  globalThis.fetch = async (_url, options) => { sent = JSON.parse(options.body).text; return Response.json({ok:true}); };
+  try {
+    assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'17:00'}),bindings)).status,409);
+    assert.equal(sent,'');
+    assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'19:00'}),bindings)).status,200);
+    assert.ok(sent.includes(date) && sent.includes('19:00') && sent.includes('Asia/Irkutsk'));
+    data.weeks[date][0].status = 'taken';
+    assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'19:00'}),bindings)).status,409);
   } finally { globalThis.fetch = originalFetch; }
 });

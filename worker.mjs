@@ -1,7 +1,11 @@
+import { scheduleApi } from './schedule-api.mjs';
+import { readSchedule, publicWeek, weekStart, validDate, localNow, addDays } from './schedule.mjs';
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const scheduleResponse = await scheduleApi(request, env);
+    if (scheduleResponse) return scheduleResponse;
     const enabled = Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID && env.BOOKING_LIMITER);
     if (url.pathname === '/api/config' && request.method === 'GET') {
       return json({ bookingEnabled: enabled, telegramUsername: env.TELEGRAM_USERNAME || '', prices: { '60': env.PRICE_60 || '', '90': env.PRICE_90 || '' } });
@@ -39,7 +43,20 @@ export default {
         if (typeof data[key] !== 'string' || data[key].length > max) return json({ ok: false }, 400);
       }
       if (!data.name.trim() || !data.contact.trim() || data.consent !== 'on') return json({ ok: false }, 400);
-      const text = `Новая заявка с сайта\nИмя: ${data.name.trim()}\nTelegram: ${data.contact.trim()}\nЦель: ${data.goal}\nКомментарий: ${data.message || '—'}`;
+      let selectedSlot = 'Время согласовать лично';
+      if (data.slotDate || data.slotTime) {
+        if (!validDate(data.slotDate) || typeof data.slotTime !== 'string') return json({ ok: false }, 400);
+        try {
+          const saved = await readSchedule(env);
+          if (!saved) return json({ ok: false }, 503);
+          const firstWeek = weekStart(localNow(saved.data.timeZone).slice(0, 10));
+          if (weekStart(data.slotDate) < firstWeek || weekStart(data.slotDate) > addDays(firstWeek, 56)) return json({ ok: false }, 409);
+          const week = publicWeek(saved.data, weekStart(data.slotDate));
+          if (!week.slots.some(s => s.date === data.slotDate && s.time === data.slotTime && s.status === 'free')) return json({ ok: false }, 409);
+          selectedSlot = `${data.slotDate}, ${data.slotTime} (${week.timeZone}), требуется подтверждение`;
+        } catch { return json({ ok: false }, 503); }
+      }
+      const text = `Новая заявка с сайта\nИмя: ${data.name.trim()}\nTelegram: ${data.contact.trim()}\nВремя: ${selectedSlot}\nЦель: ${data.goal}\nКомментарий: ${data.message || '—'}`;
       try {
         const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },

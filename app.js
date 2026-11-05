@@ -41,10 +41,10 @@ form.addEventListener('submit', async event => {
       body: JSON.stringify(data), signal: AbortSignal.timeout(15000)
     });
     const result = await response.json();
-    if (!response.ok || result.ok !== true) throw new Error(response.status === 429 ? 'limit' : 'failed');
+    if (!response.ok || result.ok !== true) throw new Error(response.status === 429 ? 'limit' : response.status === 409 ? 'slot' : 'failed');
     form.reset();
     setStatus('Заявка отправлена! Мария свяжется с вами по указанному контакту.', 'success');
   } catch (error) {
-    setStatus(error.message === 'limit' ? 'Слишком много попыток. Попробуйте чуть позже.' : 'Не удалось подтвердить отправку. Данные сохранены в форме; попробуйте позже или напишите Марии напрямую.', 'error');
+    setStatus(error.message === 'limit' ? 'Слишком много попыток. Попробуйте чуть позже.' : error.message === 'slot' ? 'Это время уже недоступно. Обновите страницу, выберите другое время или нажмите «Согласовать время лично».' : 'Не удалось подтвердить отправку. Данные сохранены в форме; попробуйте позже или напишите Марии напрямую.', 'error');
   } finally { button.disabled = !ready; }
 });
