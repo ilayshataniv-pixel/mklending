@@ -17,6 +17,7 @@
     area.querySelectorAll('.slot.selected').forEach(button => {
       button.classList.remove('selected');
       button.setAttribute('aria-pressed', 'false');
+      button.querySelector('span').textContent = 'свободно';
     });
   };
   clearButton.addEventListener('click', clear);
@@ -35,40 +36,53 @@
       document.querySelector('#scheduleZone').textContent = `Время занятий: ${data.timeZone}. Время подтвердит Мария.`;
       area.replaceChildren();
       if (!data.slots.length) { area.textContent = 'На эту неделю свободные часы пока не опубликованы. Можно оставить заявку и согласовать время лично.'; return; }
+      const hint = document.createElement('p');
+      hint.className = 'schedule-scroll-hint';
+      hint.textContent = 'Прокрутите таблицу вбок, чтобы увидеть остальные дни.';
+      const grid = document.createElement('div');
+      grid.className = 'schedule-grid';
+      grid.tabIndex = 0;
+      grid.setAttribute('role', 'region');
+      grid.setAttribute('aria-label', 'Расписание на неделю');
       const table = document.createElement('table');
       table.className = 'schedule-table';
-      table.setAttribute('role', 'table');
       const caption = document.createElement('caption'); caption.textContent = 'Нажмите на свободное время'; table.append(caption);
       const header = table.createTHead().insertRow();
+      const timeHeader = document.createElement('th');
+      timeHeader.scope = 'col';
+      timeHeader.textContent = 'Время';
+      header.append(timeHeader);
       const body = table.createTBody();
-      body.setAttribute('role', 'rowgroup');
-      const row = body.insertRow();
-      row.setAttribute('role', 'row');
       for (let day = 0; day < 7; day++) {
         const dayLabel = `${['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][day]}, ${label(shift(week, day))}`;
         const th = document.createElement('th');
         th.scope = 'col';
         th.textContent = dayLabel;
         header.append(th);
-        const cell = row.insertCell();
-        cell.setAttribute('role', 'cell');
-        const mobileLabel = document.createElement('span');
-        mobileLabel.className = 'schedule-day-label';
-        mobileLabel.textContent = dayLabel;
-        const list = document.createElement('div');
-        list.className = 'slot-list';
-        cell.append(mobileLabel, list);
-        const slots = data.slots.filter(s => s.day === day);
-        if (!slots.length) list.textContent = '—';
-        for (const slot of slots) {
+      }
+      const slotsByDayAndTime = new Map(data.slots.map(slot => [`${slot.day}/${slot.time}`, slot]));
+      const times = [...new Set(data.slots.map(slot => slot.time))].sort();
+      for (const time of times) {
+        const row = body.insertRow();
+        const rowHeader = document.createElement('th');
+        rowHeader.scope = 'row';
+        rowHeader.textContent = time;
+        row.append(rowHeader);
+        for (let day = 0; day < 7; day++) {
+          const cell = row.insertCell();
+          const slot = slotsByDayAndTime.get(`${day}/${time}`);
+          if (!slot) {
+            cell.textContent = '—';
+            continue;
+          }
           const button = document.createElement('button'); button.type = 'button'; button.className = 'slot';
           const state = slot.status === 'free' ? 'свободно' : slot.status === 'past' ? 'прошло' : 'занято';
+          const active = selected?.date === slot.date && selected?.time === slot.time && slot.status === 'free';
           const badge = document.createElement('span');
-          badge.textContent = state;
+          badge.textContent = active ? 'выбрано' : state;
           button.append(slot.time, badge);
           button.disabled = slot.status !== 'free';
           button.setAttribute('aria-label', `${label(slot.date)}, ${slot.time}, ${data.timeZone}, ${state}`);
-          const active = selected?.date === slot.date && selected?.time === slot.time && !button.disabled;
           button.classList.toggle('selected', active);
           if (!button.disabled) button.setAttribute('aria-pressed', String(active));
           button.addEventListener('click', () => {
@@ -76,16 +90,18 @@
             selected = { date: slot.date, time: slot.time };
             button.classList.add('selected');
             button.setAttribute('aria-pressed', 'true');
+            badge.textContent = 'выбрано';
             dateInput.value = slot.date;
             timeInput.value = slot.time;
             selectedTime.value = `${label(slot.date)}, ${slot.time} (${data.timeZone})`;
             clearButton.hidden = false;
             document.querySelector('#booking').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
           });
-          list.append(button);
+          cell.append(button);
         }
       }
-      area.append(table);
+      grid.append(table);
+      area.append(hint, grid);
     } catch { area.textContent = 'Расписание временно недоступно. Можно оставить заявку без выбора времени.'; }
     finally { loading = false; prev.disabled = !week || offset <= 0; next.disabled = !week || offset >= 8; }
   }

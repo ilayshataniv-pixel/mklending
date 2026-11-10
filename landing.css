@@ -131,12 +131,21 @@ section { padding: 85px 0; }
 }
 .weekbar button:not(:disabled) { cursor: pointer; }
 .table-scroll { margin: 24px 0 18px; color: var(--muted); }
-.schedule-table { width: 100%; border-spacing: 6px 8px; table-layout: fixed; }
+.schedule-scroll-hint { display: none; font-size: 14px; margin: 0 0 8px; }
+.schedule-grid { overflow-x: auto; padding: 4px; }
+.schedule-table { width: 100%; min-width: 760px; border-spacing: 0; table-layout: fixed; }
 .schedule-table caption { text-align: left; font-size: 14px; margin-bottom: 12px; }
-.schedule-table th { color: var(--plum); font-weight: 600; text-align: left; }
-.schedule-table td { vertical-align: top; }
-.schedule-day-label { display: none; }
-.slot-list { display: grid; gap: 8px; }
+.schedule-table th, .schedule-table td { padding: 6px; text-align: center; border-bottom: 1px solid var(--line); }
+.schedule-table th { color: var(--plum); font-weight: 600; }
+.schedule-table thead th { background: var(--cream); }
+.schedule-table tr > th:first-child {
+  width: 82px;
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--cream);
+  box-shadow: 1px 0 var(--line);
+}
 .slot {
   width: 100%;
   min-height: 48px;
@@ -144,7 +153,7 @@ section { padding: 85px 0; }
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--cream);
-  text-align: left;
+  text-align: center;
   color: var(--ink);
   cursor: pointer;
 }
@@ -197,18 +206,9 @@ footer {
 footer .wrap { display: flex; justify-content: space-between; gap: 10px 18px; }
 @media (max-width: 850px) {
   .cards { grid-template-columns: minmax(0, 1fr); }
-  .schedule-table, .schedule-table caption, .schedule-table tbody { display: block; }
-  .schedule-table thead { display: none; }
-  .schedule-table tr { display: grid; gap: 10px; }
-  .schedule-table td {
-    display: grid;
-    gap: 8px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-  }
-  .schedule-day-label { display: block; color: var(--plum); font-weight: 600; }
-  .slot-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 108px), 1fr)); }
+}
+@media (max-width: 810px) {
+  .schedule-scroll-hint { display: block; }
 }
 @media (max-width: 680px) {
   .wrap { width: calc(100% - 32px); }
