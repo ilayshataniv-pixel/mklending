@@ -1,5 +1,5 @@
 // Set this to the HTTPS address printed by Wrangler after the Worker is deployed.
-const serviceOrigin = '';
+const serviceOrigin = 'https://mklending.mklending.workers.dev';
 
 const menu = document.querySelector('.mobile-navigation');
 menu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => { menu.open = false; }));
