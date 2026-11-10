@@ -131,15 +131,17 @@ section { padding: 85px 0; }
 }
 .weekbar button:not(:disabled) { cursor: pointer; }
 .table-scroll { margin: 24px 0 18px; color: var(--muted); }
-.schedule-scroll-hint { display: none; font-size: 14px; margin: 0 0 8px; }
+.schedule-scroll-hint { font-size: 14px; margin: 0 0 8px; }
 .schedule-grid { overflow-x: auto; padding: 4px; }
-.schedule-table { width: 100%; min-width: 760px; border-spacing: 0; table-layout: fixed; }
+.schedule-table { width: 100%; border-spacing: 0; }
 .schedule-table caption { text-align: left; font-size: 14px; margin-bottom: 12px; }
 .schedule-table th, .schedule-table td { padding: 6px; text-align: center; border-bottom: 1px solid var(--line); }
 .schedule-table th { color: var(--plum); font-weight: 600; }
 .schedule-table thead th { background: var(--cream); }
+.schedule-table thead th:not(:first-child) { min-width: 96px; }
 .schedule-table tr > th:first-child {
   width: 82px;
+  min-width: 82px;
   position: sticky;
   inset-inline-start: 0;
   z-index: 1;
@@ -150,16 +152,16 @@ section { padding: 85px 0; }
   width: 100%;
   min-height: 48px;
   padding: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid #a2c3aa;
   border-radius: 14px;
-  background: var(--cream);
+  background: #e6f2e8;
   text-align: center;
-  color: var(--ink);
+  color: #28553b;
   cursor: pointer;
 }
-.slot span { display: block; font-size: 13px; color: var(--muted); }
-.slot:disabled { background: #f4f1ed; }
-.slot.selected { background: var(--sage); border-color: #a4b19b; }
+.slot span { display: block; font-size: 13px; }
+.slot:disabled { background: #eeeded; border-color: #d6d4d4; color: #626060; opacity: 1; }
+.slot.selected { background: #306047; border-color: #306047; color: white; }
 .booking-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(30px, 6vw, 85px); }
 .booking p { max-width: 430px; }
 form {
@@ -206,9 +208,6 @@ footer {
 footer .wrap { display: flex; justify-content: space-between; gap: 10px 18px; }
 @media (max-width: 850px) {
   .cards { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 810px) {
-  .schedule-scroll-hint { display: block; }
 }
 @media (max-width: 680px) {
   .wrap { width: calc(100% - 32px); }
