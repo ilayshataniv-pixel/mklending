@@ -6,6 +6,8 @@ const json = (body, status = 200) => Response.json(body, { status, headers: { 'C
 const accountPages = new Set(['/account', '/account/', '/account.html']);
 const publicPaths = new Set(['/api/config', '/api/schedule', '/api/booking']);
 const lessonTypes = new Map([['regular', 'Обычное занятие'], ['trial', 'Пробный урок']]);
+const bookingDateFormat = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const escapeTelegramHtml = value => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 const isAccountPage = pathname => accountPages.has(decodeURI(pathname).replace(/\/{2,}/g, '/'));
 const isPagesRequest = (request, env) => Boolean(env.PAGES_ORIGIN && request.headers.get('Origin') === env.PAGES_ORIGIN);
 const handler = {
@@ -65,7 +67,7 @@ const handler = {
       if (!['Для жизни и общения', 'Для работы', 'Подготовка к экзамену', 'Хочу начать с основ', 'Пока не знаю — обсудим'].includes(data.goal)) return json({ ok: false }, 400);
       const lessonType = lessonTypes.get(data.lessonType);
       if (data.lessonType !== undefined && !lessonType) return json({ ok: false }, 400);
-      let selectedSlot = 'Время согласовать лично';
+      let selectedSlot = 'Согласовать с учеником';
       if (data.slotDate || data.slotTime) {
         if (!validDate(data.slotDate) || typeof data.slotTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(data.slotTime)) return json({ ok: false }, 400);
         try {
@@ -75,15 +77,28 @@ const handler = {
           if (weekStart(data.slotDate) < firstWeek || weekStart(data.slotDate) > addDays(firstWeek, 56)) return json({ ok: false }, 409);
           const week = publicWeek(saved.data, weekStart(data.slotDate));
           if (!week.slots.some(s => s.date === data.slotDate && s.time === data.slotTime && s.status === 'free')) return json({ ok: false }, 409);
-          selectedSlot = `${data.slotDate}, ${data.slotTime} (${week.timeZone}), требуется подтверждение`;
+          const date = bookingDateFormat.format(new Date(`${data.slotDate}T00:00:00Z`));
+          const zone = week.timeZone === 'Asia/Irkutsk' ? 'Иркутск' : week.timeZone;
+          selectedSlot = `${date} в ${data.slotTime} · ${zone}`;
         } catch { return json({ ok: false }, 503); }
       }
-      const format = lessonType ? `\nФормат: ${lessonType}` : '';
-      const text = `Новая заявка на занятие\nИмя: ${data.name.trim()}\nКонтакт: ${data.contact.trim()}\nВремя: ${selectedSlot}${format}\nЦель: ${data.goal}\nКомментарий: ${data.message || '—'}`;
+      const comment = data.message.trim();
+      const text = [
+        '✨ <b>Новая заявка на занятие</b>',
+        '',
+        `🗓 <b>Время</b> · ${escapeTelegramHtml(selectedSlot)}`,
+        ...(lessonType ? [`📚 <b>Формат</b> · ${lessonType}`] : []),
+        `👤 <b>Имя</b> · ${escapeTelegramHtml(data.name.trim())}`,
+        `📩 <b>Контакт</b> · ${escapeTelegramHtml(data.contact.trim())}`,
+        `🎯 <b>Цель</b> · ${escapeTelegramHtml(data.goal)}`,
+        '',
+        ...(comment ? ['💬 <b>Комментарий</b>', `<blockquote>${escapeTelegramHtml(comment)}</blockquote>`, ''] : []),
+        '⏳ <i>Ожидает подтверждения</i>',
+      ].join('\n');
       try {
         const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, link_preview_options: { is_disabled: true } }), signal: AbortSignal.timeout(10000)
+          body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true } }), signal: AbortSignal.timeout(10000)
         });
         const result = await response.json();
         if (!response.ok || result.ok !== true) return json({ ok: false }, 502);

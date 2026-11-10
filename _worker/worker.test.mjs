@@ -37,12 +37,18 @@ test('GitHub Pages can book while the recipient stays server-configured', async 
     return Response.json({ ok: true });
   };
   try {
-    const sent = await worker.fetch(request({ ...valid, contact: 'learner@example.com', chat_id: 'another-chat' }, origin), bindings);
+    const sent = await worker.fetch(request({
+      ...valid, name: 'Тест & Co', contact: 'learner@example.com', message: '<b>Привет</b> & спасибо',
+      chat_id: 'another-chat',
+    }, origin), bindings);
     assert.equal(sent.status, 200);
     assert.equal(sent.headers.get('Access-Control-Allow-Origin'), origin);
     assert.equal(messages.length, 1);
     assert.equal(messages[0].chat_id, 'test-chat');
-    assert.match(messages[0].text, /Контакт: learner@example.com/);
+    assert.equal(messages[0].parse_mode, 'HTML');
+    assert.match(messages[0].text, /<b>Контакт<\/b> · learner@example\.com/);
+    assert.match(messages[0].text, /Тест &amp; Co/);
+    assert.ok(messages[0].text.includes('<blockquote>&lt;b&gt;Привет&lt;/b&gt; &amp; спасибо</blockquote>'));
     assert.equal((await worker.fetch(request(valid, 'https://other.example'), bindings)).status, 403);
     assert.equal(messages.length, 1);
   } finally {
@@ -77,7 +83,11 @@ test('booking rejects unavailable time and sends the selected date with timezone
     assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'17:00'}),bindings)).status,409);
     assert.equal(sent,'');
     assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'19:00',lessonType:'trial'}),bindings)).status,200);
-    assert.ok(sent.includes(date) && sent.includes('19:00') && sent.includes('Asia/Irkutsk') && sent.includes('Пробный урок'));
+    const displayDate = new Date(`${date}T00:00:00Z`).toLocaleDateString('ru-RU', {
+      day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+    });
+    assert.ok(sent.includes(`${displayDate} в 19:00 · Иркутск`) && sent.includes('Пробный урок'));
+    assert.ok(!sent.includes('Комментарий'));
     data.weeks[date][0].status = 'taken';
     assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'19:00'}),bindings)).status,409);
   } finally { globalThis.fetch = originalFetch; }
