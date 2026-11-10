@@ -1,0 +1,15 @@
+{
+  "name": "mklending",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "build": "node prepare.mjs",
+    "dev": "wrangler dev",
+    "db:local": "wrangler d1 execute mklending-schedule --local --file=schema.sql",
+    "security:check": "node check-secrets.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.159.0"
+  }
+}

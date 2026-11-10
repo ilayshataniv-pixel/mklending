@@ -1,0 +1,156 @@
+:root { --banner-surface: #f4e9e3; }
+
+.site-header {
+  position: relative;
+  z-index: 2;
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+}
+.site-header .wrap {
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 22px;
+}
+.site-header .logo { flex-shrink: 0; }
+.site-header nav, .account-nav { display: flex; align-items: center; gap: clamp(12px, 1.7vw, 26px); }
+.site-header nav a { color: var(--muted); text-decoration: none; }
+.site-header nav a, .account-nav a { font-size: 14px; white-space: nowrap; }
+.account-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+.mobile-navigation { display: none; }
+.hero.hero-banner {
+  position: relative;
+  min-height: 535px;
+  padding: 75px 0 115px;
+  background: var(--banner-surface) url("english-study-restored.webp") no-repeat right center / max(57%, 590px) auto;
+  isolation: isolate;
+}
+.hero-banner::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, var(--banner-surface) 42%, #f4e9e3cf 46%, #f4e9e300 64%);
+}
+.hero-banner .hero-content { max-width: 610px; }
+.hero-banner h1 { max-width: 590px; font-size: clamp(38px, 4.2vw, 60px); }
+.hero-banner .lead { max-width: 425px; }
+.booking, footer { background-color: var(--banner-surface); }
+.about .about-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(28px, 6vw, 80px);
+}
+.teacher-gallery {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  aspect-ratio: 1.25;
+}
+.teacher-gallery img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  border-radius: 16px;
+}
+.teacher-gallery .teacher-main {
+  grid-row: span 2;
+  object-position: 53% center;
+}
+.teacher-gallery .teacher-closeup { object-position: right center; }
+.teacher-gallery .teacher-park { object-position: center 60%; }
+.booking-panel {
+  position: relative;
+  z-index: 1;
+  margin-top: -61px;
+  margin-bottom: 30px;
+  padding: 25px 30px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: 0 15px 38px #5a3d4c10;
+}
+.booking-panel-layout { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; }
+.booking-panel fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
+.booking-panel legend { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
+.lesson-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lesson-option { position: relative; margin: 0; cursor: pointer; }
+.lesson-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.lesson-option > span {
+  display: block;
+  height: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink);
+}
+.lesson-option input:checked + span { background: #f5e7e2; border-color: var(--plum); }
+.lesson-option input:focus-visible + span { outline: 3px solid var(--plum); outline-offset: 3px; }
+.lesson-option strong, .lesson-option small { display: block; }
+.lesson-option small { margin-top: 3px; font-size: 12px; color: var(--muted); }
+.booking-panel .btn { align-self: end; min-height: 56px; }
+.price .price-value { display: block; margin-top: 20px; color: var(--plum); font-size: 18px; font-weight: 600; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  #formats .card,
+  .teacher-gallery img,
+  .lesson-option > span,
+  .prices .price {
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  #formats .card:hover,
+  .teacher-gallery img:hover,
+  .lesson-option:hover > span,
+  .prices .price:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px #5a3d4c24;
+  }
+}
+@media (max-width: 1040px) {
+  .site-header nav, .account-nav { display: none; }
+  .mobile-navigation { display: block; position: relative; }
+  .mobile-navigation summary { cursor: pointer; color: var(--plum); min-height: 44px; padding: 9px 8px; }
+  .mobile-navigation ul {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: min(230px, calc(100vw - 32px));
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 10px 24px #5a3d4c24;
+  }
+  .mobile-navigation a { display: flex; align-items: center; min-height: 44px; padding: 8px 12px; text-decoration: none; }
+  .mobile-navigation :is([data-guest], [data-profile]) { color: var(--plum); font-weight: 600; }
+}
+@media (max-width: 850px) {
+  .hero.hero-banner { background-position: right center; }
+  .hero-banner::before { background: linear-gradient(90deg, var(--banner-surface) 20%, #f4e9e3ec 48%, #f4e9e315 100%); }
+}
+@media (max-width: 680px) {
+  .about .about-grid { grid-template-columns: minmax(0, 1fr); }
+  .teacher-gallery { gap: 8px; }
+  .site-header .wrap { min-height: 68px; }
+  .site-header .logo { font-size: 14px; }
+  .site-header .header-booking { display: none; }
+  .hero.hero-banner { min-height: 0; padding: 41px 0 210px; background-size: 100% auto; background-position: center bottom; }
+  .hero-banner::before { background: linear-gradient(180deg, var(--banner-surface) 50%, #f4e9e36b 66%, transparent 83%); }
+  .hero-banner h1 { font-size: clamp(29px, 8vw, 40px); }
+  .hero-banner .hero-actions { margin-bottom: 0; }
+  .booking-panel { margin-top: -43px; padding: 19px; border-radius: 16px; }
+  .booking-panel-layout { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+  .lesson-options { gap: 8px; }
+  .lesson-option > span { padding: 10px; }
+  .lesson-option strong { font-size: 15px; }
+  .lesson-option small { font-size: 13px; }
+}
+@media (max-width: 360px) {
+  .lesson-options { grid-template-columns: minmax(0, 1fr); }
+}
+

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Личный кабинет · Мария / English</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="landing.css">
+  <link rel="stylesheet" href="header.css?v=accounts">
+  <link rel="stylesheet" href="account.css">
+  <script src="account.js" defer></script>
+</head>
+<body>
+  <header class="site-header account-header"><div class="wrap">
+    <a class="logo" href="index.html">Мария <span>/ English</span></a>
+    <a class="text-link" href="index.html">На главную</a>
+  </div></header>
+  <main class="account-main">
+    <div class="wrap account-wrap">
+      <span class="eyebrow">Ваш аккаунт</span>
+      <h1>Личный кабинет</h1>
+      <p class="status" id="accountStatus" role="status">Загружаем профиль…</p>
+      <div id="accountContent" hidden>
+        <dl class="account-details">
+          <dt>Имя</dt><dd id="profileName"></dd>
+          <dt>Email</dt><dd id="profileEmail"></dd>
+        </dl>
+        <form id="profileForm" method="post">
+          <div><label for="profileNameInput">Изменить имя</label><input id="profileNameInput" name="name" autocomplete="given-name" maxlength="80" required></div>
+          <button class="btn" type="submit">Сохранить имя</button>
+          <p class="status form-note" id="profileStatus" role="status"></p>
+        </form>
+        <div class="account-actions">
+          <a class="text-link" href="index.html">Вернуться на главную</a>
+          <button class="button-link" id="logout" type="button">Выйти</button>
+        </div>
+        <p class="status form-note" id="logoutStatus" role="status"></p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

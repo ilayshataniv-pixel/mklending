@@ -1,0 +1,16 @@
+.account-main { padding-block: clamp(32px, 7vw, 80px); }
+.account-wrap { max-width: 510px; }
+.account-wrap h1 { font-size: clamp(24px, 6vw, 40px); margin: 14px 0 22px; }
+.account-main .btn { width: 100%; }
+.account-main .text-link, .account-header .text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.account-header .wrap { min-height: 68px; }
+.account-header .logo { font-size: clamp(12px, 3vw, 17px); }
+.account-details { margin: 0 0 20px; padding: 18px 20px; border-radius: 18px; background: var(--rose); }
+.account-details dt { font-size: 14px; color: var(--plum); }
+.account-details dd { margin: 0; font-weight: 600; }
+.account-details dd + dt { margin-top: 12px; }
+.account-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 20px; margin-top: 14px; }
