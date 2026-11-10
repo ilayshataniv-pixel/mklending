@@ -12,5 +12,5 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "mklending-schedule", "database_id": "00000000-0000-4000-8000-000000000000" }
   ],
-  "vars": { "TELEGRAM_USERNAME": "", "TELEGRAM_BOT_USERNAME": "mary_tech_bot", "TELEGRAM_BOT_START": "", "PRICE_60": "", "PRICE_90": "", "PRICE_TRIAL": "" }
+  "vars": { "PAGES_ORIGIN": "https://ilayshataniv-pixel.github.io", "PRICE_60": "", "PRICE_90": "", "PRICE_TRIAL": "" }
 }

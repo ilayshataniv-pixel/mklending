@@ -9,41 +9,12 @@ menu.addEventListener('keydown', event => {
   menu.querySelector('summary').focus();
 });
 
-const weekControls = document.querySelector('.weekbar');
-const schedule = document.querySelector('#scheduleArea');
-const booking = document.querySelector('#bookingForm');
-weekControls.hidden = true;
-booking.hidden = true;
-
-const botContact = document.querySelector('#botContact');
-botContact.href = 'https://t.me/mary_tech_bot';
-botContact.hidden = false;
-document.querySelector('#botHint').hidden = false;
-
-function serviceButton(label, path) {
-  const link = document.createElement('a');
-  link.className = 'btn';
-  link.href = new URL(path, serviceOrigin).href;
-  link.textContent = label;
-  return link;
-}
-
-const accountLinks = document.querySelectorAll('[data-guest]');
+document.documentElement.dataset.bookingOrigin = serviceOrigin;
 if (serviceOrigin) {
-  accountLinks.forEach(link => { link.href = new URL(link.getAttribute('href'), serviceOrigin).href; });
-  schedule.replaceChildren(serviceButton('Открыть расписание ↗', '/#schedule'));
-  const actions = document.querySelector('.telegram-actions');
-  const formats = document.querySelectorAll('input[name="lesson-option"]');
-  const bookingButton = serviceButton('Перейти к записи ↗', '/#booking');
-  formats.forEach(option => option.addEventListener('change', () => {
-    if (option.checked) bookingButton.href = new URL(`/?lesson=${option.value}#booking`, serviceOrigin).href;
-  }));
-  actions.append(bookingButton);
+  document.querySelectorAll('[data-guest]').forEach(link => {
+    link.href = new URL(link.getAttribute('href'), serviceOrigin).href;
+  });
 } else {
-  accountLinks.forEach(link => { link.hidden = true; });
-  const bookingLink = document.createElement('a');
-  bookingLink.className = 'text-link';
-  bookingLink.href = '#booking';
-  bookingLink.textContent = 'Перейти к записи через Telegram';
-  schedule.replaceChildren('Расписание появится после подключения сервиса. ', bookingLink);
+  document.querySelectorAll('[data-guest]').forEach(link => { link.hidden = true; });
+  document.querySelector('.weekbar').hidden = true;
 }

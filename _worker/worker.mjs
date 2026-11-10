@@ -4,8 +4,10 @@ import { secureResponse } from './security.mjs';
 import { accountApi, accountUser } from './account-api.mjs';
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 const accountPages = new Set(['/account', '/account/', '/account.html']);
+const publicPaths = new Set(['/api/config', '/api/schedule', '/api/booking']);
 const lessonTypes = new Map([['regular', 'Обычное занятие'], ['trial', 'Пробный урок']]);
 const isAccountPage = pathname => accountPages.has(decodeURI(pathname).replace(/\/{2,}/g, '/'));
+const isPagesRequest = (request, env) => Boolean(env.PAGES_ORIGIN && request.headers.get('Origin') === env.PAGES_ORIGIN);
 const handler = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -23,15 +25,12 @@ const handler = {
     if (url.pathname === '/api/config' && request.method === 'GET') {
       return json({
         bookingEnabled: enabled,
-        telegramUsername: env.TELEGRAM_USERNAME || '',
-        telegramBotUsername: env.TELEGRAM_BOT_USERNAME || '',
-        telegramBotStart: env.TELEGRAM_BOT_START || '',
         prices: { '60': env.PRICE_60 || '', '90': env.PRICE_90 || '', trial: env.PRICE_TRIAL || '' },
       });
     }
     if (url.pathname === '/api/booking') {
       if (request.method !== 'POST') return json({ ok: false }, 405);
-      if (request.headers.get('Origin') !== url.origin) return json({ ok: false }, 403);
+      if (request.headers.get('Origin') !== url.origin && !isPagesRequest(request, env)) return json({ ok: false }, 403);
       if (!enabled) return json({ ok: false }, 503);
       if ((request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase() !== 'application/json') return json({ ok: false }, 415);
       const ip = request.headers.get('CF-Connecting-IP');
@@ -80,7 +79,7 @@ const handler = {
         } catch { return json({ ok: false }, 503); }
       }
       const format = lessonType ? `\nФормат: ${lessonType}` : '';
-      const text = `Новая заявка с сайта\nИмя: ${data.name.trim()}\nTelegram: ${data.contact.trim()}\nВремя: ${selectedSlot}${format}\nЦель: ${data.goal}\nКомментарий: ${data.message || '—'}`;
+      const text = `Новая заявка на занятие\nИмя: ${data.name.trim()}\nКонтакт: ${data.contact.trim()}\nВремя: ${selectedSlot}${format}\nЦель: ${data.goal}\nКомментарий: ${data.message || '—'}`;
       try {
         const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -110,7 +109,24 @@ export default {
       url.protocol = 'https:';
       return secureResponse(new Response(null, { status: 308, headers: { Location: url.href } }), privatePage);
     }
-    try { return secureResponse(await handler.fetch(request, env), privatePage); }
-    catch { return secureResponse(json({ ok: false }, 503), privatePage); }
+    const fromPages = publicPaths.has(url.pathname) && isPagesRequest(request, env);
+    let response;
+    try {
+      if (fromPages && url.pathname === '/api/booking' && request.method === 'OPTIONS' &&
+          request.headers.get('Access-Control-Request-Method') === 'POST') {
+        response = new Response(null, { status: 204, headers: {
+          'Access-Control-Allow-Methods': 'POST',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        } });
+      } else {
+        response = await handler.fetch(request, env);
+      }
+    } catch {
+      response = json({ ok: false }, 503);
+    }
+    const secured = secureResponse(response, privatePage);
+    if (publicPaths.has(url.pathname)) secured.headers.append('Vary', 'Origin');
+    if (fromPages) secured.headers.set('Access-Control-Allow-Origin', env.PAGES_ORIGIN);
+    return secured;
   }
 };

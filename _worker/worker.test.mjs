@@ -18,6 +18,37 @@ test('cross-origin requests, absent consent and oversized input are rejected', a
   assert.equal((await worker.fetch(request({ ...valid, message: 'x'.repeat(9000) }), env())).status, 413);
   assert.equal((await worker.fetch(request(null), env())).status, 400);
 });
+test('GitHub Pages can book while the recipient stays server-configured', async () => {
+  const origin = 'https://ilayshataniv-pixel.github.io';
+  const bindings = { ...env(), PAGES_ORIGIN: origin };
+  const preflight = await worker.fetch(new Request('https://example.com/api/booking', {
+    method: 'OPTIONS', headers: { Origin: origin, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type' },
+  }), bindings);
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('Access-Control-Allow-Origin'), origin);
+  assert.equal(preflight.headers.get('Access-Control-Allow-Headers'), 'Content-Type');
+  const privateRoute = await worker.fetch(new Request('https://example.com/api/account', { headers: { Origin: origin } }), bindings);
+  assert.equal(privateRoute.headers.get('Access-Control-Allow-Origin'), null);
+
+  const originalFetch = globalThis.fetch;
+  const messages = [];
+  globalThis.fetch = async (_url, options) => {
+    messages.push(JSON.parse(options.body));
+    return Response.json({ ok: true });
+  };
+  try {
+    const sent = await worker.fetch(request({ ...valid, contact: 'learner@example.com', chat_id: 'another-chat' }, origin), bindings);
+    assert.equal(sent.status, 200);
+    assert.equal(sent.headers.get('Access-Control-Allow-Origin'), origin);
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].chat_id, 'test-chat');
+    assert.match(messages[0].text, /Контакт: learner@example.com/);
+    assert.equal((await worker.fetch(request(valid, 'https://other.example'), bindings)).status, 403);
+    assert.equal(messages.length, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 test('rate limit and missing configuration prevent sending', async () => {
   assert.equal((await worker.fetch(request(), {})).status, 503);
   const bindings = env(); bindings.BOOKING_LIMITER.limit = async () => ({ success: false });

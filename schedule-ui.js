@@ -1,4 +1,5 @@
 (() => {
+  if (!bookingOrigin || location.protocol === 'file:') return;
   const title = document.querySelector('#weekTitle'), area = document.querySelector('#scheduleArea');
   const prev = document.querySelector('#previousWeek'), next = document.querySelector('#nextWeek');
   const clearButton = document.querySelector('#clearSlot');
@@ -24,7 +25,9 @@
     if (loading) return;
     loading = true; prev.disabled = next.disabled = true; area.textContent = 'Загружаем расписание…';
     try {
-      const response = await fetch(`/api/schedule${target ? `?week=${target}` : ''}`, { signal: AbortSignal.timeout(10000) });
+      const url = new URL('/api/schedule', bookingOrigin);
+      if (target) url.searchParams.set('week', target);
+      const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
       if (!response.ok) throw new Error();
       const data = await response.json(); week = data.week; firstWeek ||= week;
       offset = Math.round((new Date(`${week}T12:00:00Z`) - new Date(`${firstWeek}T12:00:00Z`)) / 604800000);

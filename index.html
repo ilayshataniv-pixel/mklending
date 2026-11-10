@@ -1,7 +1,9 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Мария Колесникова · Английский онлайн</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="landing.css">
 <link rel="stylesheet" href="header.css?v=github1">
-<script src="pages-entry.js?v=telegram" defer></script>
+<script src="pages-entry.js?v=booking" defer></script>
+<script src="booking.js" defer></script>
+<script src="schedule-ui.js" defer></script>
 </head><body><header class="site-header">
   <div class="wrap">
     <a class="logo" href="#">Мария <span>/ English</span></a>
@@ -80,7 +82,7 @@
       <button type="button" id="nextWeek" aria-label="Следующая неделя" disabled>→</button>
     </div>
     <p class="note" id="scheduleZone">Иркутск · UTC+8 · время подтвердит Мария</p>
-    <div class="table-scroll" id="scheduleArea" aria-live="polite">Расписание доступно при запуске сайта через сервер.</div>
+    <div class="table-scroll" id="scheduleArea" aria-live="polite">Расписание пока недоступно.</div>
     <p class="note">Свободные часы публикуются на каждую неделю отдельно.</p>
   </div>
 </section>
@@ -89,16 +91,11 @@
     <div>
       <span class="eyebrow">05 / Первый шаг</span>
       <h2>Начнём<br>с «привет»?</h2>
-      <p class="lead">Оставьте контакт и пару слов о своей цели. Мария напишет вам в Telegram, чтобы согласовать время и формат.</p>
-      <div class="telegram-actions">
-        <a id="botContact" class="btn" aria-describedby="botHint" hidden>Открыть бота в Telegram ↗</a>
-        <a id="directContact" class="btn light" hidden>Написать Марии в Telegram ↗</a>
-      </div>
-      <p class="note" id="botHint" hidden>В чате нажмите «Старт» или отправьте /start, чтобы начать запись.</p>
+      <p class="lead">Заполните форму. Мария свяжется с вами по указанному контакту, чтобы подтвердить время и формат занятия.</p>
     </div>
     <form id="bookingForm" method="post" action="/api/booking">
       <div><label for="name">Имя</label><input id="name" name="name" placeholder="Как вас зовут?" autocomplete="given-name" maxlength="80" required></div>
-      <div><label for="contact">Ваш Telegram</label><input id="contact" name="contact" placeholder="@username" autocapitalize="none" maxlength="120" required></div>
+      <div><label for="contact">Как с вами связаться</label><input id="contact" name="contact" placeholder="Телефон, email или @username" autocapitalize="none" maxlength="120" required></div>
       <div><label for="lesson-type">Формат</label><select id="lesson-type" name="lessonType"><option value="regular">Обычное занятие</option><option value="trial">Пробный урок</option></select></div>
       <div>
         <label for="selectedTime">Выбранное время</label><input id="selectedTime" value="Согласовать лично" readonly>
@@ -108,9 +105,9 @@
       <div><label for="goal">Цель занятий</label><select id="goal" name="goal" required><option value="">Выберите цель</option><option>Для жизни и общения</option><option>Для работы</option><option>Подготовка к экзамену</option><option>Хочу начать с основ</option><option>Пока не знаю — обсудим</option></select></div>
       <div><label for="message">Комментарий</label><textarea id="message" name="message" rows="3" maxlength="1000" placeholder="Если есть что добавить"></textarea></div>
       <div hidden><label for="website">Оставьте это поле пустым</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
-      <label class="consent"><input type="checkbox" name="consent" required>Согласен на отправку данных в Telegram для ответа на заявку.</label>
+      <label class="consent"><input type="checkbox" name="consent" required>Согласен на передачу данных Марии через Telegram для ответа на заявку.</label>
       <button class="btn" id="submitButton" type="submit" disabled>Отправить заявку ↗</button>
-      <p class="form-note status" id="formStatus" role="status">Отправка заявок доступна при запуске сайта через сервер.</p>
+      <p class="form-note status" id="formStatus" role="status">Приём заявок пока недоступен.</p>
     </form>
   </div>
 </section>
