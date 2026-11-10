@@ -1,5 +1,7 @@
 import { addDays, weekStart, validDate, localNow } from './schedule.mjs';
 const $ = selector => document.querySelector(selector);
+const weekdays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+const dayLabel = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
 let key = '', state, draft = [], inherited = false, dirty = false, busy = false;
 const clone = value => structuredClone(value);
 const message = text => { $('#status').textContent = text; };
@@ -26,7 +28,10 @@ function render() {
   $('#days').replaceChildren();
   for (let day = 0; day < 7; day++) {
     const box = document.createElement('div'); box.className = 'day';
-    const heading = document.createElement('strong'); heading.textContent = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][day]; box.append(heading);
+    const heading = document.createElement('strong');
+    const date = new Date(`${addDays($('#week').value, day)}T12:00:00Z`);
+    heading.textContent = isTemplate() ? weekdays[day] : `${weekdays[day]}, ${dayLabel.format(date)}`;
+    box.append(heading);
     draft.filter(s => s.day === day).forEach(slot => {
       const row = document.createElement('div'); row.className = 'slot';
       const time = document.createElement('input'); time.type = 'time'; time.value = slot.time; time.required = true; time.setAttribute('aria-label', `Время, ${heading.textContent}`);
@@ -43,7 +48,18 @@ function render() {
 $('#login').addEventListener('submit', async event => { event.preventDefault(); key = $('#key').value; try { state = await api('GET'); $('#key').value = ''; $('#zone').value = state.data.timeZone; if (!$('#zone').value) { $('#zone').add(new Option(state.data.timeZone,state.data.timeZone)); $('#zone').value = state.data.timeZone; } $('#repeat').checked = state.data.repeat; $('#week').value = weekStart(localNow(state.data.timeZone).slice(0,10)); $('#login').hidden = true; $('#editor').hidden = false; dirty = false; loadDraft(); message('Расписание загружено.'); } catch (error) { key = ''; message(error.message); } });
 let previousWeek, previousMode;
 $('#week').addEventListener('focus', () => { previousWeek = $('#week').value; });
-$('#week').addEventListener('change', () => { const value = $('#week').value; if (!validDate(value) || weekStart(value) !== value) { $('#week').value = previousWeek; message('Выберите понедельник.'); return; } if (!inherited && previousWeek) state.data.weeks[previousWeek] = clone(draft); loadDraft(); previousWeek = value; });
+$('#week').addEventListener('change', () => {
+  const value = $('#week').value;
+  if (!validDate(value)) {
+    $('#week').value = previousWeek;
+    message('Выберите дату в календаре.');
+    return;
+  }
+  if (!inherited && previousWeek) state.data.weeks[previousWeek] = clone(draft);
+  $('#week').value = weekStart(value);
+  loadDraft();
+  previousWeek = $('#week').value;
+});
 $('#mode').addEventListener('focus', () => { previousMode = $('#mode').value; });
 $('#mode').addEventListener('change', () => { if (previousMode === 'template') state.data.template = clone(draft); else if (!inherited) state.data.weeks[$('#week').value] = clone(draft); loadDraft(); previousMode = $('#mode').value; });
 $('#repeat').addEventListener('change', () => { remember(); state.data.repeat = $('#repeat').checked; dirty = true; loadDraft(); message('Есть несохранённые изменения.'); });

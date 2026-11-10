@@ -21,6 +21,14 @@ async function accountRequest(path = '', method = 'GET', data) {
   return result;
 }
 
+async function deriveCredential(email, password) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const salt = encoder.encode(`mklending:student:v2:${email.trim().toLowerCase()}`);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 600_000, hash: 'SHA-256' }, key, 256);
+  return Array.from(new Uint8Array(bits), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 function setAccountStatus(element, text = '', kind = '') {
   element.textContent = text;
   element.classList.toggle('error', kind === 'error');
@@ -80,7 +88,15 @@ if (authForm) {
       submit.disabled = true;
       setAccountStatus(status, registering ? 'Создаём аккаунт…' : 'Входим…');
       try {
-        await accountRequest(registering ? '/register' : '/login', 'POST', Object.fromEntries(new FormData(authForm)));
+        const { password, ...profile } = Object.fromEntries(new FormData(authForm));
+        const credential = await deriveCredential(profile.email, password);
+        const endpoint = registering ? '/register' : '/login';
+        try {
+          await accountRequest(endpoint, 'POST', { ...profile, credential });
+        } catch (error) {
+          if (registering || error.message !== 'legacy_credentials') throw error;
+          await accountRequest(endpoint, 'POST', { ...profile, credential, password });
+        }
         location.replace(accountUrl);
       } catch (error) {
         reportError(status, error);

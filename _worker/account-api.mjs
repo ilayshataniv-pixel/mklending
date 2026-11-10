@@ -1,7 +1,8 @@
-import { createHash, pbkdf2, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, pbkdf2, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const derive = promisify(pbkdf2);
+const credentialVersion = 'v2:';
 const sessionSeconds = 30 * 24 * 60 * 60;
 const routes = new Map([
   ['/api/account', ['GET', 'PATCH']],
@@ -69,13 +70,16 @@ function cleanName(value) {
 async function signIn(request, env, url, data, registering) {
   const email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
   const name = registering ? cleanName(data?.name) : '';
-  const password = data?.password;
+  const credential = data?.credential;
   if (email.length > 254 || !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email) ||
-      typeof password !== 'string' || password.length < 12 || password.length > 128 ||
+      typeof credential !== 'string' || !/^[a-f0-9]{64}$/.test(credential) ||
       (registering && !name)) return json({ error: 'invalid' }, 400);
 
   const ip = request.headers.get('CF-Connecting-IP');
-  if (!ip || !env.AUTH_LIMITER) return json({ error: 'unavailable' }, 503);
+  const pepper = env.ACCOUNT_PEPPER;
+  if (!ip || !env.AUTH_LIMITER || !/^[a-f0-9]{64}$/.test(pepper ?? '')) {
+    return json({ error: 'unavailable' }, 503);
+  }
   const limits = await Promise.all([
     env.AUTH_LIMITER.limit({ key: `ip:${ip}` }),
     env.AUTH_LIMITER.limit({ key: `email:${digest(email)}` }),
@@ -86,19 +90,41 @@ async function signIn(request, env, url, data, registering) {
   const user = registering ? { id: randomUUID(), email, name }
     : await db.prepare('SELECT id, email, name, password_salt, password_hash FROM users WHERE email = ?').bind(email).first();
   const salt = registering ? randomBytes(16).toString('hex') : user?.password_salt ?? '0'.repeat(32);
-  const hash = await derive(password, Buffer.from(salt, 'hex'), 600_000, 32, 'sha256');
-  if (!registering && (!user || !timingSafeEqual(hash, Buffer.from(user.password_hash, 'hex')))) {
-    return json({ error: 'credentials' }, 401);
+  const hash = createHmac('sha256', Buffer.from(pepper, 'hex'))
+    .update(JSON.stringify([email, salt, credential])).digest();
+  const legacyHash = !registering && user && /^[a-f0-9]{64}$/.test(user.password_hash);
+  if (!registering) {
+    if (legacyHash) {
+      // Upgrade locally created accounts after verifying their original password.
+      const password = data?.password;
+      if (typeof password !== 'string' || password.length < 12 || password.length > 128) {
+        return json({ error: 'legacy_credentials' }, 409);
+      }
+      const previous = await derive(password, Buffer.from(salt, 'hex'), 600_000, 32, 'sha256');
+      if (!timingSafeEqual(previous, Buffer.from(user.password_hash, 'hex'))) {
+        return json({ error: 'credentials' }, 401);
+      }
+    } else {
+      const stored = user?.password_hash;
+      if (!/^v2:[a-f0-9]{64}$/.test(stored ?? '') ||
+          !timingSafeEqual(hash, Buffer.from(stored.slice(credentialVersion.length), 'hex'))) {
+        return json({ error: 'credentials' }, 401);
+      }
+    }
   }
 
   const token = randomBytes(32).toString('base64url');
   const timestamp = now();
   const statements = [db.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(timestamp)];
+  const storedHash = credentialVersion + hash.toString('hex');
   if (registering) {
     statements.push(db.prepare(`
       INSERT INTO users (id, email, name, password_salt, password_hash) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(email) DO NOTHING
-    `).bind(user.id, email, name, salt, hash.toString('hex')));
+    `).bind(user.id, email, name, salt, storedHash));
+  } else if (legacyHash) {
+    statements.push(db.prepare('UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ?')
+      .bind(storedHash, user.id, user.password_hash));
   }
   const oldHash = sessionHash(request);
   if (oldHash) {

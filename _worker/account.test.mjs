@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { pbkdf2Sync } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import worker from './worker.mjs';
 
 const origin = 'https://example.com';
-const credentials = { email: ' learner@example.test ', password: 'test password 1' };
+const credentials = { email: ' learner@example.test ', credential: 'ab'.repeat(32) };
 
 function setup(t) {
   const db = new DatabaseSync(':memory:');
@@ -14,6 +15,7 @@ function setup(t) {
   const env = {
     ASSETS: { fetch: async () => new Response('Account page') },
     AUTH_LIMITER: { limit: async () => ({ success: true }) },
+    ACCOUNT_PEPPER: '4a'.repeat(32),
     DB: {
       prepare: sql => ({
         bind: (...args) => ({
@@ -60,7 +62,8 @@ test('register, protect the cabinet, rename, log out, and sign in with the saved
   assert.match(session, /^__Host-maria_session=[\w-]{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure$/);
   const cookie = session.split(';')[0];
   const savedPassword = db.prepare('SELECT password_hash FROM users').get().password_hash;
-  assert.match(savedPassword, /^[a-f0-9]{64}$/);
+  assert.match(savedPassword, /^v2:[a-f0-9]{64}$/);
+  assert.notEqual(savedPassword.slice(3), credentials.credential);
   const savedToken = db.prepare('SELECT token_hash FROM sessions').get().token_hash;
   assert.match(savedToken, /^[a-f0-9]{64}$/);
   assert.ok(!cookie.includes(savedToken));
@@ -72,7 +75,7 @@ test('register, protect the cabinet, rename, log out, and sign in with the saved
   const logout = await call('/api/account/logout', { method: 'POST', cookie });
   assert.match(logout.headers.get('Set-Cookie'), /Max-Age=0/);
   assert.equal((await call('/api/account', { cookie })).status, 401);
-  assert.equal((await call('/api/account/login', { method: 'POST', body: { ...credentials, password: 'incorrect password' } })).status, 401);
+  assert.equal((await call('/api/account/login', { method: 'POST', body: { ...credentials, credential: 'cd'.repeat(32) } })).status, 401);
   const login = await call('/api/account/login', { method: 'POST', body: { ...credentials, email: 'LEARNER@EXAMPLE.TEST' } });
   assert.equal(login.status, 200);
   assert.equal((await login.json()).profile.name, 'Анна П.');
@@ -85,6 +88,22 @@ test('parallel registration creates one normalized email and one session', async
   assert.deepEqual(responses.map(response => response.status).sort(), [201, 409]);
   assert.equal(db.prepare('SELECT COUNT(*) AS total FROM users').get().total, 1);
   assert.equal(db.prepare('SELECT COUNT(*) AS total FROM sessions').get().total, 1);
+});
+
+test('a legacy account can sign in and upgrade to the new verifier', async t => {
+  const { db, call } = setup(t);
+  const password = 'legacy password';
+  const salt = '24'.repeat(16);
+  const hash = pbkdf2Sync(password, Buffer.from(salt, 'hex'), 600_000, 32, 'sha256').toString('hex');
+  db.prepare('INSERT INTO users (id, email, name, password_salt, password_hash) VALUES (?, ?, ?, ?, ?)')
+    .run('legacy', credentials.email.trim(), 'Анна', salt, hash);
+  const path = '/api/account/login';
+  const needsPassword = await call(path, { method: 'POST', body: credentials });
+  assert.equal(needsPassword.status, 409);
+  assert.equal((await needsPassword.json()).error, 'legacy_credentials');
+  assert.equal((await call(path, { method: 'POST', body: { ...credentials, password } })).status, 200);
+  assert.match(db.prepare('SELECT password_hash FROM users').get().password_hash, /^v2:/);
+  assert.equal((await call(path, { method: 'POST', body: credentials })).status, 200);
 });
 
 test('account mutations check origin, session expiration, and login rate limits', async t => {

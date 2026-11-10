@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="landing.css">
   <link rel="stylesheet" href="header.css?v=accounts">
   <link rel="stylesheet" href="account.css">
-  <script src="account.js" defer></script>
+  <script src="account.js?v=student-login" defer></script>
 </head>
 <body>
   <header class="site-header account-header"><div class="wrap">
@@ -17,7 +17,7 @@
   </div></header>
   <main class="account-main">
     <div class="wrap account-wrap">
-      <span class="eyebrow">Ваш аккаунт</span>
+      <span class="eyebrow">Аккаунт ученика</span>
       <h1>Личный кабинет</h1>
       <p class="status" id="accountStatus" role="status">Загружаем профиль…</p>
       <div id="accountContent" hidden>
@@ -31,6 +31,7 @@
           <p class="status form-note" id="profileStatus" role="status"></p>
         </form>
         <div class="account-actions">
+          <a class="text-link" href="index.html#schedule">Выбрать время занятия</a>
           <a class="text-link" href="index.html">Вернуться на главную</a>
           <button class="button-link" id="logout" type="button">Выйти</button>
         </div>
