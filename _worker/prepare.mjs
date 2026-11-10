@@ -18,7 +18,7 @@ for (const name of ['maria-park.webp', 'maria-portrait.webp', 'maria-closeup.web
   await copyFile(new URL(`teacher/${name}`, landing), new URL(`public/teacher/${name}`, import.meta.url));
 }
 const html = await readFile(new URL('index.html', landing), 'utf8');
-const pagesScript = '<script src="pages-entry.js" defer></script>';
+const pagesScript = '<script src="pages-entry.js?v=telegram" defer></script>';
 if (!html.includes(pagesScript)) throw new Error('Missing GitHub Pages entry script');
 const workerScripts = ['account.js', 'app.js', 'schedule-ui.js'].map(file => `<script src="${file}" defer></script>`).join('\n');
 await writeFile(new URL('./public/index.html', import.meta.url), html.replace(pagesScript, workerScripts));

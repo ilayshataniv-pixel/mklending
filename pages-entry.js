@@ -15,6 +15,11 @@ const booking = document.querySelector('#bookingForm');
 weekControls.hidden = true;
 booking.hidden = true;
 
+const botContact = document.querySelector('#botContact');
+botContact.href = 'https://t.me/mary_tech_bot';
+botContact.hidden = false;
+document.querySelector('#botHint').hidden = false;
+
 function serviceButton(label, path) {
   const link = document.createElement('a');
   link.className = 'btn';
@@ -36,8 +41,9 @@ if (serviceOrigin) {
   actions.append(bookingButton);
 } else {
   accountLinks.forEach(link => { link.hidden = true; });
-  schedule.textContent = 'Готовим онлайн-запись. Расписание появится после подключения сервиса.';
-  const message = document.createElement('p');
-  message.textContent = 'Готовим онлайн-запись.';
-  document.querySelector('.telegram-actions').append(message);
+  const bookingLink = document.createElement('a');
+  bookingLink.className = 'text-link';
+  bookingLink.href = '#booking';
+  bookingLink.textContent = 'Перейти к записи через Telegram';
+  schedule.replaceChildren('Расписание появится после подключения сервиса. ', bookingLink);
 }
