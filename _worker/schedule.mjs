@@ -38,3 +38,19 @@ export async function readSchedule(env) {
   if (!validateSchedule(data)) throw new Error('Invalid saved schedule');
   return { data, revision: row.revision };
 }
+
+export async function lessonAvailability(env, week) {
+  if (!week.slots.some(slot => slot.status === 'free')) return week;
+  const start = Date.parse(`${week.week}T00:00:00Z`) / 1000 - 86400;
+  const { results } = await env.DB.prepare(`SELECT starts_at, ends_at FROM lessons
+    WHERE cancelled_at IS NULL AND ends_at > ? AND starts_at < ?`).bind(start, start + 9 * 86400).all();
+  const intervals = results.map(lesson => ({
+    start: localNow(week.timeZone, new Date(lesson.starts_at * 1000)),
+    end: localNow(week.timeZone, new Date(lesson.ends_at * 1000)),
+  }));
+  return { ...week, slots: week.slots.map(slot => {
+    const time = `${slot.date}T${slot.time}`;
+    return slot.status === 'free' && intervals.some(interval => interval.start <= time && time < interval.end)
+      ? { ...slot, status: 'taken' } : slot;
+  }) };
+}

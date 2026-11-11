@@ -7,7 +7,7 @@ const output = path.resolve(root, 'public');
 if (path.dirname(output) !== path.resolve(root) || path.basename(output) !== 'public') throw new Error('Invalid output directory');
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
-for (const name of ['admin.html', 'admin.css', 'admin.js', 'schedule.mjs', 'auth.html', 'account.html', 'account.css', 'account.js']) {
+for (const name of ['admin.html', 'admin.css', 'admin.js', 'schedule.mjs', 'auth.html', 'recovery.html', 'account.html', 'account.css', 'account.js', 'student.js', 'study-ui.mjs']) {
   await copyFile(new URL(name, import.meta.url), new URL(`public/${name}`, import.meta.url));
 }
 for (const name of ['booking.js', 'schedule-ui.js', 'landing.css', 'header.css', 'english-study-restored.webp']) {

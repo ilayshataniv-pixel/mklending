@@ -1,7 +1,8 @@
 import { scheduleApi } from './schedule-api.mjs';
-import { readSchedule, publicWeek, weekStart, validDate, localNow, addDays } from './schedule.mjs';
+import { readSchedule, publicWeek, weekStart, validDate, localNow, addDays, lessonAvailability } from './schedule.mjs';
 import { secureResponse } from './security.mjs';
 import { accountApi, accountUser } from './account-api.mjs';
+import { learningApi } from './learning-api.mjs';
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 const accountPages = new Set(['/account', '/account/', '/account.html']);
 const publicPaths = new Set(['/api/config', '/api/schedule', '/api/booking']);
@@ -11,7 +12,7 @@ const escapeTelegramHtml = value => value.replaceAll('&', '&amp;').replaceAll('<
 const isAccountPage = pathname => accountPages.has(decodeURI(pathname).replace(/\/{2,}/g, '/'));
 const isPagesRequest = (request, env) => Boolean(env.PAGES_ORIGIN && request.headers.get('Origin') === env.PAGES_ORIGIN);
 const handler = {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (isAccountPage(url.pathname)) {
       if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
@@ -19,14 +20,17 @@ const handler = {
       if (url.pathname !== '/account.html') return new Response(null, { status: 303, headers: { Location: '/account.html' } });
       return env.ASSETS.fetch(request);
     }
-    const accountResponse = await accountApi(request, env, url);
+    const accountResponse = await accountApi(request, env, url, ctx);
     if (accountResponse) return accountResponse;
+    const learningResponse = await learningApi(request, env, url);
+    if (learningResponse) return learningResponse;
     const scheduleResponse = await scheduleApi(request, env);
     if (scheduleResponse) return scheduleResponse;
     const enabled = Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID && env.BOOKING_LIMITER);
     if (url.pathname === '/api/config' && request.method === 'GET') {
       return json({
         bookingEnabled: enabled,
+        recoveryEnabled: Boolean(env.RESET_ORIGIN === url.origin && env.RESET_MAIL_API_KEY && env.RESET_FROM_EMAIL && env.ACCOUNT_PEPPER),
         prices: { '60': env.PRICE_60 || '', '90': env.PRICE_90 || '', trial: env.PRICE_TRIAL || '' },
       });
     }
@@ -75,7 +79,7 @@ const handler = {
           if (!saved) return json({ ok: false }, 503);
           const firstWeek = weekStart(localNow(saved.data.timeZone).slice(0, 10));
           if (weekStart(data.slotDate) < firstWeek || weekStart(data.slotDate) > addDays(firstWeek, 56)) return json({ ok: false }, 409);
-          const week = publicWeek(saved.data, weekStart(data.slotDate));
+          const week = await lessonAvailability(env, publicWeek(saved.data, weekStart(data.slotDate)));
           if (!week.slots.some(s => s.date === data.slotDate && s.time === data.slotTime && s.status === 'free')) return json({ ok: false }, 409);
           const date = bookingDateFormat.format(new Date(`${data.slotDate}T00:00:00Z`));
           const zone = week.timeZone === 'Asia/Irkutsk' ? 'Иркутск' : week.timeZone;
@@ -111,12 +115,12 @@ const handler = {
   }
 };
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     let privatePage = false;
     try {
       privatePage = isAccountPage(url.pathname) || url.pathname.startsWith('/api/admin/') ||
-        url.pathname === '/admin.html' || url.pathname === '/admin.js';
+        url.pathname === '/admin.html' || url.pathname === '/admin.js' || url.pathname === '/recovery.html';
     } catch {
       return secureResponse(json({ ok: false }, 400));
     }
@@ -134,7 +138,7 @@ export default {
           'Access-Control-Allow-Headers': 'Content-Type',
         } });
       } else {
-        response = await handler.fetch(request, env);
+        response = await handler.fetch(request, env, ctx);
       }
     } catch {
       response = json({ ok: false }, 503);

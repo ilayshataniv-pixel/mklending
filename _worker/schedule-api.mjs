@@ -1,4 +1,4 @@
-import { readSchedule, publicWeek, localNow, weekStart, validDate, addDays, validateSchedule } from './schedule.mjs';
+import { readSchedule, publicWeek, localNow, weekStart, validDate, addDays, validateSchedule, lessonAvailability } from './schedule.mjs';
 const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
 const emptySchedule = { repeat: false, timeZone: 'Asia/Irkutsk', template: [], weeks: {} };
 async function authorized(request, env) {
@@ -20,7 +20,7 @@ export async function scheduleApi(request, env) {
       const today = localNow(data.timeZone).slice(0, 10);
       const week = url.searchParams.get('week') || weekStart(today);
       if (!validDate(week) || weekStart(week) !== week || week < weekStart(today) || week > addDays(weekStart(today), 56)) return json({ error: 'week' }, 400);
-      return json(publicWeek(data, week));
+      return json(await lessonAvailability(env, publicWeek(data, week)));
     }
     if (url.pathname !== '/api/admin/schedule') return null;
     if (!env.DB || !env.ADMIN_LIMITER) return json({ error: 'not_configured' }, 503);

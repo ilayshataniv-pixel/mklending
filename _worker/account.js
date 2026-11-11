@@ -2,8 +2,11 @@ const errorMessages = {
   credentials: 'Проверьте email и пароль.',
   email_exists: 'Этот email уже зарегистрирован. Попробуйте войти.',
   invalid: 'Проверьте данные. Пароль должен содержать от 12 до 128 символов.',
+  invalid_email: 'Проверьте email.',
   invalid_name: 'Введите имя длиной до 80 символов.',
+  invalid_reset: 'Ссылка недействительна или истекла. Проверьте email или запросите новую ссылку.',
   limit: 'Слишком много попыток. Повторите через минуту.',
+  recovery_unavailable: 'Отправка писем пока недоступна. Попробуйте позже.',
   unavailable: 'Аккаунт временно недоступен. Попробуйте позже.',
 };
 const authUrl = '/auth.html';
@@ -78,10 +81,17 @@ if (authForm) {
     const alternative = document.querySelector('#authAlternative a');
     alternative.href = 'auth.html';
     alternative.textContent = 'Уже есть аккаунт? Войти';
+    document.querySelector('#forgotPassword').hidden = true;
   }
   if (location.protocol !== 'file:') {
     submit.disabled = false;
     setAccountStatus(status);
+    if (!registering) {
+      fetch('/api/config', { cache: 'no-store', signal: AbortSignal.timeout(10000) })
+        .then(response => response.ok ? response.json() : {})
+        .then(config => { document.querySelector('#forgotPassword').hidden = config.recoveryEnabled !== true; })
+        .catch(() => {});
+    }
     authForm.addEventListener('submit', async event => {
       event.preventDefault();
       if (submit.disabled) return;
@@ -104,6 +114,63 @@ if (authForm) {
       }
     });
   }
+}
+
+const recoveryForm = document.querySelector('#recoveryForm');
+if (recoveryForm && location.protocol !== 'file:') {
+  // A reset link can be opened in the tab that already shows the request form.
+  window.addEventListener('hashchange', () => { if (location.hash) location.reload(); });
+  const token = location.hash.slice(1);
+  const resetting = /^[A-Za-z0-9_-]{43}$/.test(token);
+  const status = document.querySelector('#recoveryStatus');
+  const submit = recoveryForm.querySelector('button[type=submit]');
+  const hint = document.querySelector('#recoveryHint');
+  const requestAgain = document.querySelector('#requestAgain');
+  if (token) history.replaceState(null, '', location.pathname);
+  if (resetting) {
+    document.title = 'Новый пароль · Мария / English';
+    document.querySelector('#recoveryTitle').textContent = 'Новый пароль';
+    hint.textContent = 'Введите email аккаунта и придумайте новый пароль.';
+    recoveryForm.querySelectorAll('[data-reset-field]').forEach(field => {
+      field.hidden = false;
+      field.querySelector('input').disabled = false;
+    });
+    submit.textContent = 'Сохранить пароль';
+    requestAgain.hidden = false;
+  }
+  submit.disabled = false;
+  setAccountStatus(status, token && !resetting ? errorMessages.invalid_reset : '', token && !resetting ? 'error' : '');
+
+  recoveryForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (submit.disabled) return;
+    const { email, password, confirmation } = Object.fromEntries(new FormData(recoveryForm));
+    if (resetting && password !== confirmation) {
+      setAccountStatus(status, 'Пароли не совпадают.', 'error');
+      recoveryForm.elements.confirmation.focus();
+      return;
+    }
+    submit.disabled = true;
+    setAccountStatus(status, resetting ? 'Сохраняем пароль…' : 'Запрашиваем ссылку…');
+    try {
+      if (resetting) {
+        const credential = await deriveCredential(email, password);
+        await accountRequest('/reset', 'POST', { email, token, credential });
+        recoveryForm.reset();
+        recoveryForm.hidden = true;
+        hint.hidden = true;
+        requestAgain.hidden = true;
+        setAccountStatus(status, 'Пароль изменён. Теперь можно войти с новым паролем.', 'success');
+      } else {
+        await accountRequest('/recovery', 'POST', { email });
+        setAccountStatus(status, 'Если этот email зарегистрирован, на него придёт ссылка для сброса пароля.', 'success');
+        submit.disabled = false;
+      }
+    } catch (error) {
+      reportError(status, error);
+      submit.disabled = false;
+    }
+  });
 }
 
 const profileForm = document.querySelector('#profileForm');

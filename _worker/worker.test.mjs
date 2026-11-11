@@ -76,7 +76,7 @@ test('booking rejects unavailable time and sends the selected date with timezone
   const week = weekStart(localNow('Asia/Irkutsk').slice(0,10));
   const date = addDays(week, 7);
   const data = { repeat:false,timeZone:'Asia/Irkutsk',template:[],weeks:{ [date]:[{day:0,time:'19:00',status:'free'}] } };
-  const bindings = env(); bindings.DB = { prepare: () => ({ first: async () => ({ data:JSON.stringify(data),revision:1 }) }) };
+  const bindings = env(); bindings.DB = { prepare: () => ({ first: async () => ({ data:JSON.stringify(data),revision:1 }), bind: () => ({ all: async () => ({ results: [] }) }) }) };
   const originalFetch = globalThis.fetch; let sent = '';
   globalThis.fetch = async (_url, options) => { sent = JSON.parse(options.body).text; return Response.json({ok:true}); };
   try {

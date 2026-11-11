@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Восстановление пароля · Мария / English</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="landing.css">
+  <link rel="stylesheet" href="header.css?v=accounts">
+  <link rel="stylesheet" href="account.css">
+  <script src="account.js?v=recovery" defer></script>
+</head>
+<body>
+  <header class="site-header account-header"><div class="wrap">
+    <a class="logo" href="index.html">Мария <span>/ English</span></a>
+    <a class="text-link" href="index.html">На главную</a>
+  </div></header>
+  <main class="account-main">
+    <div class="wrap account-wrap">
+      <span class="eyebrow">Мария / English</span>
+      <h1 id="recoveryTitle">Восстановление пароля</h1>
+      <p id="recoveryHint">Введите email, с которым вы зарегистрировались.</p>
+      <form id="recoveryForm" method="post">
+        <div>
+          <label for="recoveryEmail">Email</label>
+          <input id="recoveryEmail" name="email" type="email" autocomplete="username" maxlength="254" autocapitalize="none" required>
+        </div>
+        <div data-reset-field hidden>
+          <label for="newPassword">Новый пароль</label>
+          <input id="newPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" aria-describedby="resetPasswordHint" required disabled>
+          <p id="resetPasswordHint" class="form-note">От 12 до 128 символов.</p>
+        </div>
+        <div data-reset-field hidden>
+          <label for="repeatPassword">Повторите новый пароль</label>
+          <input id="repeatPassword" name="confirmation" type="password" autocomplete="new-password" maxlength="128" required disabled>
+        </div>
+        <button class="btn" type="submit" disabled>Отправить ссылку</button>
+      </form>
+      <p class="status form-note" id="recoveryStatus" role="status">Для восстановления пароля откройте сайт через сервер.</p>
+      <div class="account-actions">
+        <a class="text-link" href="auth.html">Вернуться ко входу</a>
+        <a class="text-link" href="recovery.html" id="requestAgain" hidden>Запросить новую ссылку</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

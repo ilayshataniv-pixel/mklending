@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pbkdf2Sync } from 'node:crypto';
+import { createHash, pbkdf2Sync } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import worker from './worker.mjs';
+import { localNow, addDays, weekStart } from './schedule.mjs';
 
 const origin = 'https://example.com';
 const credentials = { email: ' learner@example.test ', credential: 'ab'.repeat(32) };
@@ -11,22 +12,27 @@ const credentials = { email: ' learner@example.test ', credential: 'ab'.repeat(3
 function setup(t) {
   const db = new DatabaseSync(':memory:');
   t.after(() => db.close());
+  db.exec('PRAGMA foreign_keys = ON');
   db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
+  function statement(sql, args = []) {
+    return {
+      sql,
+      bind: (...parameters) => statement(sql, parameters),
+      first: async () => db.prepare(sql).get(...args) ?? null,
+      all: () => ({ results: db.prepare(sql).all(...args) }),
+      run: () => ({ meta: db.prepare(sql).run(...args) }),
+    };
+  }
   const env = {
     ASSETS: { fetch: async () => new Response('Account page') },
     AUTH_LIMITER: { limit: async () => ({ success: true }) },
     ACCOUNT_PEPPER: '4a'.repeat(32),
     DB: {
-      prepare: sql => ({
-        bind: (...args) => ({
-          first: async () => db.prepare(sql).get(...args) ?? null,
-          run: () => ({ meta: db.prepare(sql).run(...args) }),
-        }),
-      }),
+      prepare: statement,
       batch: async statements => {
         db.exec('BEGIN');
         try {
-          const results = statements.map(statement => statement.run());
+          const results = statements.map(statement => /^\s*SELECT\b/i.test(statement.sql) ? statement.all() : statement.run());
           db.exec('COMMIT');
           return results;
         } catch (error) {
@@ -36,11 +42,11 @@ function setup(t) {
       },
     },
   };
-  function call(path, { method = 'GET', body, cookie, from = origin } = {}) {
+  function call(path, { method = 'GET', body, cookie, from = origin, ctx } = {}) {
     const headers = { Origin: from, 'CF-Connecting-IP': '192.0.2.1' };
     if (cookie) headers.Cookie = cookie;
     if (body) headers['Content-Type'] = 'application/json';
-    return worker.fetch(new Request(origin + path, { method, headers, body: JSON.stringify(body) }), env);
+    return worker.fetch(new Request(origin + path, { method, headers, body: JSON.stringify(body) }), env, ctx);
   }
   const register = body => call('/api/account/register', { method: 'POST', body: { ...credentials, name: 'Анна', ...body } });
   return { db, env, call, register };
@@ -117,4 +123,140 @@ test('account mutations check origin, session expiration, and login rate limits'
   assert.equal((await call('/api/account', { method: 'PATCH', cookie, body: { name: 'Анна' } })).status, 401);
   env.AUTH_LIMITER.limit = async () => ({ success: false });
   assert.equal((await call('/api/account/login', { method: 'POST', body: credentials })).status, 429);
+});
+
+test('password recovery conceals account existence and consumes each link once', async t => {
+  const { db, env, call, register } = setup(t);
+  const recovery = '/api/account/recovery';
+  const reset = '/api/account/reset';
+  const login = '/api/account/login';
+  const email = credentials.email.trim();
+  const otherEmail = 'other@example.test';
+  const post = (path, body, options) => call(path, { method: 'POST', body, ...options });
+  const page = await call('/recovery.html');
+  assert.equal(page.headers.get('Cache-Control'), 'no-store');
+  assert.equal(page.headers.get('Referrer-Policy'), 'no-referrer');
+  assert.equal((await post(recovery, { email })).status, 503);
+  Object.assign(env, {
+    RESET_ORIGIN: origin,
+    RESET_FROM_EMAIL: 'sender@example.test',
+    RESET_MAIL_API_KEY: 'mail-test',
+  });
+  const sent = [];
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    sent.push({ url, ...JSON.parse(options.body).message });
+    return Response.json({ status: 'success', emails: [email] });
+  });
+  const session = async response => (await response).headers.get('Set-Cookie').split(';')[0];
+  const oldSession = await session(register());
+  const secondSession = await session(post(login, credentials));
+  const otherSession = await session(register({ email: otherEmail }));
+  assert.equal((await post(recovery, { email }, { from: 'https://evil.example' })).status, 403);
+  const deliveries = [];
+  const ctx = { waitUntil: promise => deliveries.push(promise) };
+  for (const address of ['unknown@example.test', ' LEARNER@EXAMPLE.TEST ', email]) {
+    const response = await post(recovery, { email: address }, { ctx });
+    assert.equal(response.status, 202);
+    assert.deepEqual(await response.json(), { ok: true });
+  }
+  await Promise.all(deliveries);
+  assert.equal(deliveries.length, 3);
+  assert.equal(sent.length, 1);
+  const [message] = sent;
+  assert.equal(message.url, 'https://goapi.unisender.ru/ru/transactional/api/v1/email/send.json');
+  assert.deepEqual(message.recipients, [{ email }]);
+  assert.equal(message.track_links, 0);
+  const link = new URL(message.body.plaintext.split('\n')[1]);
+  assert.equal(link.origin, origin);
+  assert.equal(link.pathname, '/recovery.html');
+  assert.equal(link.search, '');
+  const token = link.hash.slice(1);
+  const record = db.prepare('SELECT token_hash, expires_at, requested_at FROM password_resets').get();
+  assert.equal(record.token_hash, createHash('sha256').update(token).digest('hex'));
+  assert.equal(record.expires_at - record.requested_at, 15 * 60);
+
+  const newCredentials = { email, credential: 'cd'.repeat(32) };
+  const resetBody = { ...newCredentials, token };
+  assert.equal((await post(reset, { ...resetBody, email: otherEmail })).status, 400);
+  db.exec('UPDATE password_resets SET expires_at = 0');
+  assert.equal((await post(reset, resetBody)).status, 400);
+  db.prepare('UPDATE password_resets SET expires_at = ?').run(record.expires_at);
+  const results = await Promise.all([post(reset, resetBody), post(reset, resetBody)]);
+  assert.deepEqual(results.map(result => result.status).sort(), [200, 400]);
+  assert.match(results.find(result => result.ok).headers.get('Set-Cookie'), /Max-Age=0/);
+  for (const cookie of [oldSession, secondSession]) {
+    assert.equal((await call('/api/account', { cookie })).status, 401);
+  }
+  assert.equal((await call('/api/account', { cookie: otherSession })).status, 200);
+  assert.equal((await post(login, credentials)).status, 401);
+  assert.equal((await post(login, newCredentials)).status, 200);
+});
+
+test('homework belongs to one student and completion persists across sessions', async t => {
+  const { db, env, call, register } = setup(t);
+  const first = await register();
+  const cookie = first.headers.get('Set-Cookie').split(';')[0];
+  const second = await register({ email: 'second@example.test' });
+  const otherCookie = second.headers.get('Set-Cookie').split(';')[0];
+  const studentId = db.prepare('SELECT id FROM users WHERE email = ?').get(credentials.email.trim()).id;
+  assert.equal((await call('/api/account/study')).status, 401);
+  const id = 'homework-1';
+  const title = '<script>Title</script>';
+  db.prepare(`INSERT INTO homework (id, user_id, title, instructions, resource_url, due_date, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, studentId, title, 'Read chapter 1.\nAnswer questions.', 'https://example.com/workbook', '2027-01-01', 100);
+  const read = async cookie => (await (await call('/api/account/study', { cookie })).json()).homework;
+  assert.equal((await read(otherCookie)).length, 0);
+  assert.equal((await read(cookie))[0].completed_at, null);
+  assert.equal((await read(cookie))[0].title, title);
+  assert.equal((await call('/api/account/study?studentId=other', { cookie })).status, 200);
+  const mark = (cookie, body, from) => call('/api/account/study', { method: 'PATCH', cookie, body, from });
+  assert.equal((await mark(otherCookie, { homeworkId: id, completed: true, studentId })).status, 404);
+  assert.equal((await mark(cookie, { homeworkId: id, completed: true }, 'https://evil.example')).status, 403);
+  assert.equal((await mark(cookie, { homeworkId: id, completed: 'yes' })).status, 400);
+  assert.equal((await mark(cookie, { homeworkId: id, completed: true })).status, 200);
+  const completedAt = (await read(cookie))[0].completed_at;
+  assert.ok(completedAt > 0);
+  assert.equal((await mark(cookie, { homeworkId: id, completed: true })).status, 200);
+  assert.equal((await read(cookie))[0].completed_at, completedAt);
+  await call('/api/account/logout', { method: 'POST', cookie });
+  const login = await call('/api/account/login', { method: 'POST', body: credentials });
+  const newCookie = login.headers.get('Set-Cookie').split(';')[0];
+  assert.equal((await read(newCookie))[0].completed_at, completedAt);
+  assert.equal((await mark(newCookie, { homeworkId: id, completed: false })).status, 200);
+  assert.equal((await read(newCookie))[0].completed_at, null);
+  db.exec('UPDATE sessions SET expires_at = 0');
+  assert.equal((await call('/api/account/study', { cookie: newCookie })).status, 401);
+});
+
+test('students see their own lessons while all assigned lessons block public booking times', async t => {
+  const { db, env, call, register } = setup(t);
+  const registered = await register();
+  const cookie = registered.headers.get('Set-Cookie').split(';')[0];
+  await register({ email: 'second@example.test' });
+  const users = db.prepare('SELECT id FROM users ORDER BY email').all();
+  const date = addDays(localNow('Asia/Irkutsk').slice(0, 10), 2);
+  const week = weekStart(date);
+  const day = Math.round((Date.parse(date) - Date.parse(week)) / 86400000);
+  const schedule = {
+    repeat: false, timeZone: 'Asia/Irkutsk', template: [],
+    weeks: { [week]: ['18:00', '19:00', '19:30', '20:00'].map(time => ({ day, time, status: 'free' })) },
+  };
+  db.prepare('INSERT INTO schedule (id, data, revision) VALUES (1, ?, 1)').run(JSON.stringify(schedule));
+  const start = Date.parse(`${date}T19:00:00+08:00`) / 1000;
+  const insert = db.prepare('INSERT INTO lessons (id, user_id, title, starts_at, ends_at) VALUES (?, ?, ?, ?, ?)');
+  insert.run('lesson-1', users[0].id, 'Английский', start, start + 3600);
+  insert.run('lesson-2', users[1].id, 'Другой ученик', start + 3600, start + 7200);
+  const personal = await (await call('/api/account/study?studentId=' + users[1].id, { cookie })).json();
+  assert.equal(personal.lessons.length, 1);
+  assert.equal(personal.lessons[0].id, 'lesson-1');
+  assert.equal(personal.timeZone, 'Asia/Irkutsk');
+  const readSlots = async () => (await (await call('/api/schedule?week=' + week)).json()).slots;
+  assert.deepEqual((await readSlots()).map(slot => slot.status), ['free', 'taken', 'taken', 'taken']);
+  Object.assign(env, { TELEGRAM_BOT_TOKEN: 'test-token', TELEGRAM_CHAT_ID: 'test-chat', BOOKING_LIMITER: { limit: async () => ({ success: true }) } });
+  const booking = { name: 'Тест', contact: '@example', goal: 'Для работы', message: '', consent: 'on', slotDate: date, slotTime: '19:00' };
+  assert.equal((await call('/api/booking', { method: 'POST', body: booking })).status, 409);
+  db.prepare('UPDATE lessons SET cancelled_at = ? WHERE id = ?').run(100, 'lesson-1');
+  assert.deepEqual((await readSlots()).map(slot => slot.status), ['free', 'free', 'free', 'taken']);
+  const cancelled = await (await call('/api/account/study', { cookie })).json();
+  assert.equal(cancelled.lessons[0].cancelled_at, 100);
 });

@@ -14,3 +14,38 @@
 .account-details dd { margin: 0; font-weight: 600; }
 .account-details dd + dt { margin-top: 12px; }
 .account-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 20px; margin-top: 14px; }
+.student-wrap { max-width: 1060px; }
+.student-wrap > h1 { font-size: clamp(26px, 5vw, 44px); }
+.student-heading, .study-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px 24px; flex-wrap: wrap; }
+.student-heading .lead { margin-block: 0; }
+.study-navigation { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 12px; }
+.study-navigation a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; border-radius: 24px; background: var(--rose); color: var(--plum); font-size: 14px; text-decoration: none; }
+.study-section { padding: 28px 0; }
+.study-section + .study-section { border-top: 1px solid var(--line); }
+.study-section h2 { font-size: clamp(22px, 4.2vw, 30px); margin: 0 0 20px; }
+.study-section h3 { font-size: 18px; margin: 12px 0 18px; }
+.study-section-heading { margin-bottom: 20px; }
+.study-section-heading h2 { margin: 0; }
+.study-list { display: grid; gap: 16px; }
+.study-card { padding: clamp(18px, 4vw, 28px); border: 1px solid var(--line); border-radius: 20px; background: var(--white); min-width: 0; }
+.study-card h3 { margin: 16px 0 10px; font-size: clamp(18px, 3vw, 22px); }
+.study-card p { margin-block: 10px; }
+.study-card .btn { margin-top: 16px; }
+.study-card .text-link, .study-card .button-link { display: flex; width: fit-content; }
+.study-badge, .study-count { display: inline-block; padding: 4px 11px; border-radius: 20px; background: var(--rose); font-size: 12px; font-weight: 500; color: var(--ink); }
+.study-badge.sage { background: var(--sage); }
+.study-count { padding: 3px 9px; margin-left: 3px; vertical-align: middle; }
+.lesson-date { display: block; margin-top: 20px; font-size: clamp(20px, 4vw, 28px); font-weight: 600; color: var(--plum); }
+.lesson-time { color: var(--ink); font-size: 18px; }
+.homework-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.homework-instructions { white-space: pre-wrap; }
+.study-empty { padding: 24px; margin: 0; border: 1px dashed var(--line); border-radius: 18px; }
+.study-history { margin-top: 20px; }
+.study-history summary { min-height: 44px; padding-block: 10px; color: var(--plum); cursor: pointer; }
+.profile-section form { max-width: 450px; }
+.profile-email { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .homework-columns { grid-template-columns: minmax(0, 1fr); }
+  .student-heading { align-items: start; }
+  .student-wrap .account-actions { align-items: start; flex-direction: column; }
+}
