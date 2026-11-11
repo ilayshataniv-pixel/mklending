@@ -9,11 +9,17 @@ const lessonType = document.querySelector('#lesson-type');
 const lessonOptions = document.querySelectorAll('input[name="lesson-option"]');
 function syncLessonOptions() {
   if (lessonType) lessonOptions.forEach(option => { option.checked = option.value === lessonType.value; });
+  const duration = form.elements.duration;
+  if (duration) {
+    duration.value = lessonType.value === 'trial' ? '30' : duration.value === '30' ? '60' : duration.value;
+    Array.from(duration.options).forEach(option => { option.disabled = lessonType.value === 'trial' ? option.value !== '30' : option.value === '30'; });
+  }
 }
 lessonOptions.forEach(option => option.addEventListener('change', () => {
-  if (option.checked && lessonType) lessonType.value = option.value;
+  if (option.checked && lessonType) { lessonType.value = option.value; syncLessonOptions(); }
 }));
 lessonType?.addEventListener('change', syncLessonOptions);
+syncLessonOptions();
 const requestedLesson = new URLSearchParams(location.search).get('lesson');
 if (lessonType && Array.from(lessonType.options).some(option => option.value === requestedLesson)) {
   lessonType.value = requestedLesson;
@@ -40,10 +46,16 @@ async function loadConfiguration() {
   }
 }
 if (bookingOrigin && location.protocol !== 'file:') loadConfiguration();
+const clearRequest = () => { delete form.dataset.requestId; };
+form.addEventListener('input', clearRequest);
+form.addEventListener('change', clearRequest);
+form.addEventListener('reset', clearRequest);
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (!ready || button.disabled || !form.reportValidity()) return;
   const data = Object.fromEntries(new FormData(form));
+  form.dataset.requestId ||= crypto.randomUUID();
+  data.requestId = form.dataset.requestId;
   data.name = data.name.trim(); data.contact = data.contact.trim();
   if (!data.name || !data.contact) { setStatus('Укажите имя и контакт для связи.', 'error'); return; }
   button.disabled = true;
@@ -54,11 +66,13 @@ form.addEventListener('submit', async event => {
       body: JSON.stringify(data), signal: AbortSignal.timeout(15000)
     });
     const result = await response.json();
-    if (!response.ok || result.ok !== true) throw new Error(response.status === 429 ? 'limit' : response.status === 409 ? 'slot' : 'failed');
+    if (!response.ok || result.ok !== true) throw new Error(response.status === 401 ? 'unauthorized' : response.status === 429 ? 'limit' : response.status === 409 ? 'slot' : 'failed');
     form.reset();
     syncLessonOptions();
-    setStatus('Заявка отправлена! Мария свяжется с вами по указанному контакту.', 'success');
+    setStatus('Заявка принята! Мария подтвердит время и свяжется с вами по указанному контакту.', 'success');
+    document.dispatchEvent(new CustomEvent('booking-saved'));
   } catch (error) {
-    setStatus(error.message === 'limit' ? 'Слишком много попыток. Попробуйте чуть позже.' : error.message === 'slot' ? 'Это время уже недоступно. Обновите страницу, выберите другое время или нажмите «Согласовать время лично».' : 'Не удалось подтвердить отправку. Данные остались в форме. Попробуйте позже.', 'error');
+    if (error.message === 'unauthorized') { location.replace('/auth.html'); return; }
+    setStatus(error.message === 'limit' ? 'Слишком много попыток. Попробуйте чуть позже.' : error.message === 'slot' ? 'Это время уже недоступно. Обновите расписание, выберите другое время или нажмите «Согласовать время лично».' : 'Не удалось подтвердить отправку. Данные остались в форме. Попробуйте позже.', 'error');
   } finally { button.disabled = !ready; }
 });

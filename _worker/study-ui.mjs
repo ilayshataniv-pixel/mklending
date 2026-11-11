@@ -61,3 +61,23 @@ export function homeworkCard(task, onToggle) {
   }
   return card;
 }
+
+export function bookingCard(booking, onCancel) {
+  const labels = { pending: 'Ожидает подтверждения', confirmed: 'Подтверждена', declined: 'Отклонена', cancelled: 'Отменена' };
+  const card = element('article', 'study-card booking-card');
+  card.dataset.bookingId = booking.id;
+  card.append(element('span', booking.status === 'confirmed' ? 'study-badge sage' : 'study-badge', labels[booking.status]));
+  card.append(element('h3', '', booking.lesson_type === 'trial' ? 'Пробный урок' : 'Обычное занятие'));
+  if (booking.starts_at !== null) {
+    const start = new Date(booking.starts_at * 1000);
+    card.append(element('p', '', `${dateFormat.format(start)} · ${timeFormat.format(start)} · Иркутск`));
+  } else card.append(element('p', '', 'Время согласуем лично'));
+  card.append(element('p', 'form-note', `${booking.duration} минут`));
+  if (booking.status === 'pending' && onCancel) {
+    const cancel = element('button', 'button-link', 'Отменить заявку');
+    cancel.type = 'button';
+    cancel.addEventListener('click', () => onCancel(booking, cancel));
+    card.append(cancel);
+  }
+  return card;
+}

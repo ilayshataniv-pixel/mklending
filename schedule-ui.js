@@ -22,6 +22,7 @@
     grid.tabIndex = hasOverflow ? 0 : -1;
   }
   const clear = () => {
+    delete document.querySelector('#bookingForm').dataset.requestId;
     selected = null;
     dateInput.value = '';
     timeInput.value = '';
@@ -141,6 +142,8 @@
   }
   prev.addEventListener('click', () => { if (offset > 0) { clear(); load(offset - 1); } });
   next.addEventListener('click', () => { if (offset < lastPage) { clear(); load(offset + 1); } });
+  document.addEventListener('booking-saved', () => { clear(); load(offset); });
+  document.querySelector('#refreshSchedule')?.addEventListener('click', () => { clear(); load(offset); });
   clearButton.hidden = true;
   load();
 })();

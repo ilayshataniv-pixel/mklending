@@ -67,5 +67,18 @@ $('#zone').addEventListener('change', () => { state.data.timeZone = $('#zone').v
 $('#copy').addEventListener('click', () => { const previous = addDays($('#week').value,-7); draft = clone(state.data.weeks[previous] ?? (state.data.repeat ? state.data.template : [])); edit(); render(); });
 $('#inherit').addEventListener('click', () => { delete state.data.weeks[$('#week').value]; dirty = true; loadDraft(); message('Индивидуальные настройки недели сброшены. Сохраните изменения.'); });
 $('#save').addEventListener('click', async () => { if (busy || !$('#days').reportValidity()) return; remember(); busy = true; $('#editor').querySelectorAll('button,input,select').forEach(e => e.disabled = true); try { const result = await api('PUT', state); state.revision = result.revision; dirty = false; message('Сохранено. Расписание доступно посетителям.'); } catch (error) { message(error.message); } finally { busy = false; $('#editor').querySelectorAll('button,input,select').forEach(e => e.disabled = false); } });
-$('#logout').addEventListener('click', () => { if (dirty && !confirm('Выйти без сохранения изменений?')) return; key = ''; state = null; dirty = false; $('#editor').hidden = true; $('#login').hidden = false; message('Вы вышли.'); });
+$('#logout').addEventListener('click', async () => {
+  if (dirty && !confirm('Выйти без сохранения изменений?')) return;
+  try {
+    const response = await fetch('/api/teacher/logout', { method: 'POST', signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error('Не удалось выйти. Повторите попытку.');
+    key = ''; state = null; dirty = false;
+    $('#editor').hidden = true; $('#login').hidden = false;
+    message('Вы вышли.');
+  } catch (error) { message(error.message); }
+});
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+
+fetch('/api/teacher/session', { cache: 'no-store', signal: AbortSignal.timeout(10000) })
+  .then(response => { if (response.ok) $('#login').dispatchEvent(new Event('submit', { cancelable: true })); })
+  .catch(() => {});

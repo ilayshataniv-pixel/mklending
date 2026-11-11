@@ -54,3 +54,33 @@ CREATE TABLE IF NOT EXISTS homework (
 );
 
 CREATE INDEX IF NOT EXISTS homework_student ON homework (user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS teacher_sessions (
+  token_hash TEXT PRIMARY KEY,
+  key_hash TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS teacher_sessions_expiry ON teacher_sessions (expires_at);
+
+CREATE TABLE IF NOT EXISTS booking_requests (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  contact TEXT NOT NULL,
+  goal TEXT NOT NULL,
+  message TEXT NOT NULL,
+  lesson_type TEXT NOT NULL,
+  duration INTEGER NOT NULL,
+  payload_hash TEXT NOT NULL,
+  starts_at INTEGER,
+  ends_at INTEGER,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'declined', 'cancelled')),
+  created_at INTEGER NOT NULL,
+  lesson_id TEXT REFERENCES lessons(id) ON DELETE SET NULL,
+  notified_at INTEGER,
+  notification_lease_until INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS booking_requests_student ON booking_requests (user_id, created_at);
+CREATE INDEX IF NOT EXISTS booking_requests_pending ON booking_requests (starts_at, ends_at) WHERE status = 'pending';

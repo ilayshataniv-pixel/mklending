@@ -1,8 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, pbkdf2Sync } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { DatabaseSync } from 'node:sqlite';
+import { testDatabase } from './database-fixture.mjs';
 import worker from './worker.mjs';
 import { localNow, addDays, weekStart } from './schedule.mjs';
 
@@ -10,37 +9,12 @@ const origin = 'https://example.com';
 const credentials = { email: ' learner@example.test ', credential: 'ab'.repeat(32) };
 
 function setup(t) {
-  const db = new DatabaseSync(':memory:');
-  t.after(() => db.close());
-  db.exec('PRAGMA foreign_keys = ON');
-  db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
-  function statement(sql, args = []) {
-    return {
-      sql,
-      bind: (...parameters) => statement(sql, parameters),
-      first: async () => db.prepare(sql).get(...args) ?? null,
-      all: () => ({ results: db.prepare(sql).all(...args) }),
-      run: () => ({ meta: db.prepare(sql).run(...args) }),
-    };
-  }
+  const { db, binding } = testDatabase(t);
   const env = {
     ASSETS: { fetch: async () => new Response('Account page') },
     AUTH_LIMITER: { limit: async () => ({ success: true }) },
     ACCOUNT_PEPPER: '4a'.repeat(32),
-    DB: {
-      prepare: statement,
-      batch: async statements => {
-        db.exec('BEGIN');
-        try {
-          const results = statements.map(statement => /^\s*SELECT\b/i.test(statement.sql) ? statement.all() : statement.run());
-          db.exec('COMMIT');
-          return results;
-        } catch (error) {
-          db.exec('ROLLBACK');
-          throw error;
-        }
-      },
-    },
+    DB: binding,
   };
   function call(path, { method = 'GET', body, cookie, from = origin, ctx } = {}) {
     const headers = { Origin: from, 'CF-Connecting-IP': '192.0.2.1' };

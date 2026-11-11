@@ -44,8 +44,20 @@
 .study-history summary { min-height: 44px; padding-block: 10px; color: var(--plum); cursor: pointer; }
 .profile-section form { max-width: 450px; }
 .profile-email { overflow-wrap: anywhere; }
+.cabinet-form-grid, .teacher-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.teacher-grid > div { min-width: 0; }
+.teacher-grid form, #bookingForm { margin-block: 24px; padding: clamp(16px, 4vw, 26px); border: 1px solid var(--line); border-radius: 20px; background: var(--white); }
+.teacher-login { max-width: 460px; }
+.teacher-tools { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.teacher-tools button { min-height: 44px; }
+.teacher-form-title { margin-top: 0; }
+.teacher-request-details { margin-top: 15px; }
+.teacher-request-details summary { min-height: 44px; color: var(--plum); cursor: pointer; padding: 10px 0; }
+.teacher-request-details form { margin-top: 10px; }
+.teacher-request-details form .btn { margin-top: 15px; }
+.teacher-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 @media (max-width: 640px) {
-  .homework-columns { grid-template-columns: minmax(0, 1fr); }
+  .homework-columns, .cabinet-form-grid, .teacher-grid, .teacher-overview { grid-template-columns: minmax(0, 1fr); }
   .student-heading { align-items: start; }
   .student-wrap .account-actions { align-items: start; flex-direction: column; }
 }

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">
+  <title>Кабинет Марии · English</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="landing.css"><link rel="stylesheet" href="header.css?v=accounts"><link rel="stylesheet" href="account.css?v=teacher">
+  <script type="module" src="teacher.js?v=teacher"></script>
+</head>
+<body>
+  <header class="site-header account-header"><div class="wrap"><a class="logo" href="index.html">Мария <span>/ English</span></a><a class="text-link" href="index.html">На сайт</a></div></header>
+  <main class="account-main"><div class="wrap student-wrap">
+    <span class="eyebrow">Для преподавателя</span><h1>Кабинет Марии</h1>
+    <form id="teacherLogin" class="teacher-login" method="post">
+      <div><label for="teacherKey">Ключ доступа преподавателя</label><input id="teacherKey" type="password" autocomplete="off" required></div>
+      <button type="submit" class="btn">Войти в кабинет</button><p class="form-note">Используйте ваш ключ доступа к расписанию.</p>
+    </form>
+    <p id="teacherStatus" class="status form-note" role="status"></p>
+    <div id="teacherContent" hidden>
+      <nav class="study-navigation" aria-label="Разделы кабинета"><a href="#teacherRequests">Новые заявки</a><a href="#teacherStudents">Ученики</a><a href="admin.html">Свободные часы</a><a href="#teacherCalendar">Ближайшие занятия</a></nav>
+      <div class="account-actions"><button type="button" class="button-link" id="teacherRefresh">Обновить кабинет</button><button type="button" class="button-link" id="teacherLogout">Выйти</button></div>
+      <section class="study-section" id="teacherRequests"><h2>Новые заявки <span class="study-count" id="requestCount">0</span></h2><div class="study-list" id="requestList"></div></section>
+      <section class="study-section" id="teacherStudents">
+        <h2>Ученики</h2><p id="noStudents" hidden>Пока нет зарегистрированных учеников. После регистрации на сайте ученик появится в этом списке.</p>
+        <div><label for="studentSelect">Выберите ученика</label><select id="studentSelect"></select></div>
+        <div id="selectedStudent" hidden>
+          <p class="lead" id="selectedStudentName"></p>
+          <div class="teacher-grid">
+            <div>
+              <form id="lessonForm" method="post">
+                <h3 class="teacher-form-title">Назначить занятие</h3>
+                <div><label for="lessonTitle">Тема или формат</label><input id="lessonTitle" name="title" maxlength="160" value="Английский с Марией" required></div>
+                <div><label for="lessonDate">Дата</label><input id="lessonDate" name="date" type="date" required></div>
+                <div><label for="lessonTime">Начало по Иркутску</label><input id="lessonTime" name="time" type="time" required></div>
+                <div><label for="lessonDuration">Длительность</label><select id="lessonDuration" name="duration"><option value="30">30 минут</option><option value="60" selected>60 минут</option><option value="90">90 минут</option></select></div>
+                <div><label for="lessonMeeting">Ссылка для подключения</label><input id="lessonMeeting" name="meetingUrl" type="url" placeholder="https://…" maxlength="2048"></div>
+                <button class="btn" type="submit">Сохранить занятие</button><button class="button-link" type="reset">Очистить форму</button>
+                <p class="form-note">Время по Иркутску, UTC+8. Занятие появится в кабинете ученика.</p>
+              </form>
+              <h3>Занятия ученика</h3><div class="study-list" id="teacherLessons"></div>
+            </div>
+            <div>
+              <form id="homeworkForm" method="post">
+                <h3 class="teacher-form-title">Добавить домашнее задание</h3>
+                <div><label for="homeworkTitle">Название</label><input id="homeworkTitle" name="title" maxlength="160" required></div>
+                <div><label for="homeworkInstructions">Что нужно сделать</label><textarea id="homeworkInstructions" name="instructions" rows="5" maxlength="4000"></textarea></div>
+                <div><label for="homeworkResource">Ссылка на материалы</label><input id="homeworkResource" name="resourceUrl" type="url" placeholder="https://…" maxlength="2048"></div>
+                <div><label for="homeworkDue">Срок выполнения</label><input id="homeworkDue" name="dueDate" type="date"></div>
+                <button class="btn" type="submit">Сохранить задание</button><button class="button-link" type="reset">Очистить форму</button>
+              </form>
+              <h3>Домашние задания ученика</h3><div class="study-list" id="teacherHomework"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="study-section" id="teacherCalendar"><h2>Ближайшие занятия</h2><div class="teacher-overview" id="teacherCalendarList"></div></section>
+    </div>
+  </div></main>
+  <template id="requestConfirmTemplate">
+    <details class="teacher-request-details"><summary>Подтвердить и назначить занятие</summary><form method="post">
+      <div><label>Аккаунт ученика<select name="studentId" required></select></label></div>
+      <div><label>Тема<input name="title" maxlength="160" required></label></div>
+      <div class="cabinet-form-grid"><div><label>Дата<input name="date" type="date" required></label></div><div><label>Время по Иркутску<input name="time" type="time" required></label></div></div>
+      <div><label>Длительность<select name="duration"><option value="30">30 минут</option><option value="60">60 минут</option><option value="90">90 минут</option></select></label></div>
+      <div><label>Ссылка для подключения<input name="meetingUrl" type="url" maxlength="2048" placeholder="https://…"></label></div>
+      <p class="form-note">Если ученик оставил заявку без аккаунта, попросите его зарегистрироваться и выберите его в списке.</p>
+      <button class="btn" type="submit">Подтвердить занятие</button>
+    </form></details>
+  </template>
+</body>
+</html>

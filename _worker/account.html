@@ -7,9 +7,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="landing.css">
   <link rel="stylesheet" href="header.css?v=accounts">
-  <link rel="stylesheet" href="account.css?v=study">
-  <script src="account.js?v=study" defer></script>
-  <script type="module" src="student.js?v=study"></script>
+  <link rel="stylesheet" href="account.css?v=booking">
+  <script src="account.js?v=booking" defer></script>
+  <script src="booking.js?v=cabinet" defer></script>
+  <script src="schedule-ui.js?v=cabinet" defer></script>
+  <script type="module" src="student.js?v=booking"></script>
 </head>
 <body>
   <header class="site-header account-header"><div class="wrap">
@@ -27,7 +29,7 @@
           <button class="button-link" id="studyRefresh" type="button">Обновить задания и занятия</button>
         </div>
         <nav class="study-navigation" aria-label="Разделы кабинета">
-          <a href="#nextLessonTitle">Занятия</a><a href="#homeworkTitle">Домашние задания</a><a href="#profileTitle">Мой профиль</a>
+          <a href="#nextLessonTitle">Занятия</a><a href="#bookingSchedule">Записаться</a><a href="#homeworkTitle">Домашние задания</a><a href="#profileTitle">Мой профиль</a>
         </nav>
         <p class="status form-note" id="studyStatus" role="status">Загружаем занятия и задания…</p>
         <div id="studyContent" hidden>
@@ -36,6 +38,7 @@
             <div id="nextLesson"></div>
             <div id="otherLessons" hidden><h3>Следующие занятия</h3><div class="study-list" id="lessonList"></div></div>
             <details id="pastLessons" class="study-history" hidden><summary>История занятий</summary><div class="study-list" id="pastLessonList"></div></details>
+            <h3>Мои заявки</h3><div class="study-list" id="bookingRequests"></div>
           </section>
           <section class="study-section" aria-labelledby="homeworkTitle">
             <h2 id="homeworkTitle">Домашние задания</h2>
@@ -45,6 +48,30 @@
             </div>
           </section>
         </div>
+        <section class="study-section" id="bookingSchedule" aria-labelledby="bookingTitle">
+          <h2 id="bookingTitle">Записаться на занятие</h2>
+          <p>Выберите свободное время по Иркутску. Мария подтвердит заявку, и занятие появится в вашем кабинете.</p>
+          <div class="weekbar"><button type="button" id="previousWeek" aria-label="Предыдущая неделя" disabled>←</button><strong id="weekTitle" aria-live="polite">Расписание</strong><button type="button" id="nextWeek" aria-label="Следующая неделя" disabled>→</button></div>
+          <button type="button" class="button-link" id="refreshSchedule">Обновить расписание</button>
+          <p class="form-note" id="scheduleZone">Время занятий по Иркутску, UTC+8.</p>
+          <div id="scheduleArea" aria-live="polite"></div>
+          <form id="bookingForm" method="post">
+            <h3 id="booking">Ваша заявка</h3>
+            <input type="hidden" name="name"><input type="hidden" name="fromCabinet" value="true">
+            <div class="cabinet-form-grid">
+              <div><label for="contact">Как с вами связаться</label><input id="contact" name="contact" type="text" maxlength="120" required></div>
+              <div><label for="lesson-type">Формат</label><select id="lesson-type" name="lessonType"><option value="regular">Обычное занятие</option><option value="trial">Пробный урок</option></select></div>
+              <div><label for="duration">Длительность</label><select id="duration" name="duration"><option value="30">30 минут · пробный урок</option><option value="60" selected>60 минут</option><option value="90">90 минут</option></select></div>
+              <div><label for="selectedTime">Время</label><input id="selectedTime" value="Согласовать лично" readonly><input id="slotDate" name="slotDate" type="hidden"><input id="slotTime" name="slotTime" type="hidden"><button type="button" id="clearSlot" class="button-link" hidden>Согласовать время лично</button></div>
+            </div>
+            <div><label for="goal">Цель занятий</label><select id="goal" name="goal" required><option>Для жизни и общения</option><option>Для работы</option><option>Подготовка к экзамену</option><option>Хочу начать с основ</option><option selected>Пока не знаю — обсудим</option></select></div>
+            <div><label for="message">Комментарий</label><textarea id="message" name="message" rows="3" maxlength="1000"></textarea></div>
+            <div hidden><label for="website">Оставьте поле пустым</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+            <label class="consent"><input type="checkbox" name="consent" required>Согласен на передачу данных Марии через Telegram для ответа на заявку.</label>
+            <button class="btn" id="submitButton" type="submit" disabled>Отправить заявку</button>
+            <p class="status form-note" id="formStatus" role="status"></p>
+          </form>
+        </section>
         <section class="study-section profile-section" aria-labelledby="profileTitle">
         <h2 id="profileTitle">Мой профиль</h2>
         <p class="profile-email" id="profileEmail"></p>
@@ -55,7 +82,7 @@
         </form>
         </section>
         <div class="account-actions">
-          <a class="text-link" href="index.html#schedule">Выбрать время занятия</a>
+          <a class="text-link" href="#bookingSchedule">Записаться на занятие</a>
           <a class="text-link" href="index.html">Вернуться на главную</a>
           <button class="button-link" id="logout" type="button">Выйти</button>
         </div>

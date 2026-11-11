@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.mjs';
+import { testDatabase } from './database-fixture.mjs';
 import { weekStart, localNow, addDays } from './schedule.mjs';
 const valid = { name: 'Тест', contact: '@example', goal: 'Для работы', message: '', consent: 'on', website: '' };
 const env = () => ({ TELEGRAM_BOT_TOKEN: 'test-token', TELEGRAM_CHAT_ID: 'test-chat', BOOKING_LIMITER: { limit: async () => ({ success: true }) } });
@@ -72,23 +73,26 @@ test('honeypot does not send and Telegram must confirm success', async () => {
     assert.equal((await worker.fetch(request(), env())).status, 502);
   } finally { globalThis.fetch = originalFetch; }
 });
-test('booking rejects unavailable time and sends the selected date with timezone', async () => {
+test('booking rejects unavailable time and sends the selected date with timezone', async t => {
   const week = weekStart(localNow('Asia/Irkutsk').slice(0,10));
   const date = addDays(week, 7);
   const data = { repeat:false,timeZone:'Asia/Irkutsk',template:[],weeks:{ [date]:[{day:0,time:'19:00',status:'free'}] } };
-  const bindings = env(); bindings.DB = { prepare: () => ({ first: async () => ({ data:JSON.stringify(data),revision:1 }), bind: () => ({ all: async () => ({ results: [] }) }) }) };
+  const { db, binding } = testDatabase(t);
+  db.prepare('INSERT INTO schedule (id, data, revision) VALUES (1, ?, 1)').run(JSON.stringify(data));
+  const bindings = { ...env(), DB: binding };
   const originalFetch = globalThis.fetch; let sent = '';
   globalThis.fetch = async (_url, options) => { sent = JSON.parse(options.body).text; return Response.json({ok:true}); };
   try {
     assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'17:00'}),bindings)).status,409);
     assert.equal(sent,'');
-    assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'19:00',lessonType:'trial'}),bindings)).status,200);
+    assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'19:00',lessonType:'trial'}),bindings)).status,201);
     const displayDate = new Date(`${date}T00:00:00Z`).toLocaleDateString('ru-RU', {
       day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
     });
     assert.ok(sent.includes(`${displayDate} в 19:00 · Иркутск`) && sent.includes('Пробный урок'));
     assert.ok(!sent.includes('Комментарий'));
     data.weeks[date][0].status = 'taken';
+    db.prepare('UPDATE schedule SET data = ?, revision = 2 WHERE id = 1').run(JSON.stringify(data));
     assert.equal((await worker.fetch(request({...valid,slotDate:date,slotTime:'19:00'}),bindings)).status,409);
   } finally { globalThis.fetch = originalFetch; }
 });

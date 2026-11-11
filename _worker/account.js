@@ -185,6 +185,11 @@ if (profileForm) {
     document.querySelector('#profileName').textContent = profile.name;
     document.querySelector('#profileEmail').textContent = profile.email;
     profileForm.elements.name.value = profile.name;
+    const bookingName = document.querySelector('#bookingForm input[name=name]');
+    if (bookingName) bookingName.value = bookingName.defaultValue = profile.name;
+    const bookingContact = document.querySelector('#bookingForm input[name=contact]');
+    if (bookingContact && !bookingContact.value) bookingContact.value = profile.email;
+    if (bookingContact) bookingContact.defaultValue = profile.email;
     status.hidden = true;
     content.hidden = false;
   }

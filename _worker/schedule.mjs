@@ -43,7 +43,9 @@ export async function lessonAvailability(env, week) {
   if (!week.slots.some(slot => slot.status === 'free')) return week;
   const start = Date.parse(`${week.week}T00:00:00Z`) / 1000 - 86400;
   const { results } = await env.DB.prepare(`SELECT starts_at, ends_at FROM lessons
-    WHERE cancelled_at IS NULL AND ends_at > ? AND starts_at < ?`).bind(start, start + 9 * 86400).all();
+    WHERE cancelled_at IS NULL AND ends_at > ? AND starts_at < ?
+    UNION ALL SELECT starts_at, ends_at FROM booking_requests
+    WHERE status = 'pending' AND ends_at > ? AND starts_at < ?`).bind(start, start + 9 * 86400, start, start + 9 * 86400).all();
   const intervals = results.map(lesson => ({
     start: localNow(week.timeZone, new Date(lesson.starts_at * 1000)),
     end: localNow(week.timeZone, new Date(lesson.ends_at * 1000)),
@@ -53,4 +55,11 @@ export async function lessonAvailability(env, week) {
     return slot.status === 'free' && intervals.some(interval => interval.start <= time && time < interval.end)
       ? { ...slot, status: 'taken' } : slot;
   }) };
+}
+
+export function slotEpoch(date, time, timeZone) {
+  const approximate = Date.parse(`${date}T${time}:00Z`);
+  const displayed = Date.parse(localNow(timeZone, new Date(approximate)) + ':00Z');
+  const epoch = approximate * 2 - displayed;
+  return localNow(timeZone, new Date(epoch)) === `${date}T${time}` ? epoch / 1000 : NaN;
 }

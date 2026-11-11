@@ -42,7 +42,7 @@ export function accountUser(request, env) {
   `).bind(hash, now()).first();
 }
 
-export async function readBody(request) {
+export async function readBody(request, maxBytes = 8192) {
   const reader = request.body?.getReader();
   if (!reader) return null;
   const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -53,7 +53,7 @@ export async function readBody(request) {
       const { value, done } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 8192) {
+      if (size > maxBytes) {
         await reader.cancel();
         return null;
       }
