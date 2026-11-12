@@ -1,10 +1,39 @@
-import { element, homeworkCard, lessonCard, bookingCard } from './study-ui.mjs';
+import { element, homeworkCard, lessonCard, bookingCard, dateLabel } from './study-ui.mjs';
 
 const status = document.querySelector('#studyStatus');
 const refresh = document.querySelector('#studyRefresh');
 const content = document.querySelector('#studyContent');
 let loading = false;
 let updating = false;
+
+const panels = { nextLessonTitle: 'overview', homeworkTitle: 'homework', bookingSchedule: 'booking', booking: 'booking', profileTitle: 'profile' };
+function showPanel({ scroll = false } = {}) {
+  const current = panels[location.hash.slice(1)] || 'overview';
+  document.querySelectorAll('[data-dashboard-panel]').forEach(panel => { panel.hidden = panel.dataset.dashboardPanel !== current; });
+  document.querySelectorAll('[data-panel-link]').forEach(link => {
+    if (link.dataset.panelLink === current) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+  if (scroll) {
+    const title = document.querySelector('[data-dashboard-panel="' + current + '"] h2');
+    if (title) { title.tabIndex = -1; title.focus({ preventScroll: true }); }
+    document.querySelector('#dashboardMain').scrollIntoView({ behavior: 'instant', block: 'start' });
+  }
+  window.dispatchEvent(new Event('resize'));
+}
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href^="#"]');
+  if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+  const hash = link.getAttribute('href');
+  if (!panels[hash.slice(1)]) return;
+  event.preventDefault();
+  if (location.hash !== hash) history.pushState(null, '', hash);
+  showPanel({ scroll: true });
+});
+window.addEventListener('hashchange', () => showPanel({ scroll: true }));
+window.addEventListener('popstate', () => showPanel());
+document.querySelector('#dashboardDate').textContent = new Intl.DateTimeFormat('ru-RU', { weekday:'long', day:'numeric', month:'long', timeZone:'Asia/Irkutsk' }).format(new Date());
+showPanel();
 
 async function studyRequest(method = 'GET', body, path = 'study') {
   const response = await fetch('/api/account/' + path, {
@@ -63,7 +92,7 @@ async function loadStudy() {
   try {
     const data = await studyRequest();
     const now = Date.now() / 1000;
-    const upcoming = data.lessons.filter(lesson => lesson.cancelled_at === null && lesson.ends_at > now);
+    const upcoming = data.lessons.filter(lesson => lesson.cancelled_at === null && lesson.ends_at > now).sort((a, b) => a.starts_at - b.starts_at);
     const previous = data.lessons.filter(lesson => lesson.cancelled_at !== null || lesson.ends_at <= now).reverse();
     const next = document.querySelector('#nextLesson');
     if (upcoming.length) next.replaceChildren(lessonCard(upcoming[0]));
@@ -80,6 +109,30 @@ async function loadStudy() {
     const completed = data.homework.filter(task => task.completed_at !== null)
       .sort((a, b) => b.completed_at - a.completed_at);
     document.querySelector('#pendingCount').textContent = pending.length;
+    document.querySelector('#pendingTotal').textContent = pending.length;
+    document.querySelector('#upcomingTotal').textContent = upcoming.length;
+    document.querySelector('#requestCount').textContent = data.bookings.length;
+    const percent = data.homework.length ? Math.round(completed.length / data.homework.length * 100) : 0;
+    document.querySelector('#progressPercent').textContent = percent + '%';
+    document.querySelector('#homeworkProgress').value = percent;
+    document.querySelector('#progressCaption').textContent = data.homework.length
+      ? completed.length + ' из ' + data.homework.length + ' заданий выполнено'
+      : 'Здесь будет твой прогресс, когда Мария добавит задания.';
+    const preview = document.querySelector('#homeworkPreview');
+    if (pending.length) {
+      preview.replaceChildren(...pending.slice(0, 2).map(task => {
+        const link = element('a', 'homework-preview-card');
+        link.href = '#homeworkTitle';
+        const icon = element('span', 'task-mark', '✓');
+        icon.setAttribute('aria-hidden', 'true');
+        const copy = element('div', '');
+        copy.append(element('strong', '', task.title), element('small', '', task.due_date ? 'До ' + dateLabel(task.due_date) : 'В удобном темпе'));
+        const arrow = element('span', '', '↗');
+        arrow.setAttribute('aria-hidden', 'true');
+        link.append(icon, copy, arrow);
+        return link;
+      }));
+    } else showEmpty(preview, completed.length ? 'Все задания выполнены. Отличная работа! Можно выдохнуть и подготовиться к новому занятию.' : 'Пока заданий нет. После занятия Мария добавит сюда практику и материалы.');
     document.querySelector('#completedCount').textContent = completed.length;
     for (const [selector, tasks, empty] of [
       ['#pendingHomework', pending, 'Невыполненных заданий пока нет. Новые задания от Марии появятся здесь.'],

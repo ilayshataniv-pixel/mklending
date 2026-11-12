@@ -1,54 +1,40 @@
 <!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Личный кабинет · Мария / English</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="landing.css">
-  <link rel="stylesheet" href="header.css?v=accounts">
-  <link rel="stylesheet" href="account.css?v=booking">
-  <script src="account.js?v=booking" defer></script>
-  <script src="booking.js?v=cabinet" defer></script>
-  <script src="schedule-ui.js?v=cabinet" defer></script>
-  <script type="module" src="student.js?v=booking"></script>
-</head>
-<body>
-  <header class="site-header account-header"><div class="wrap">
-    <a class="logo" href="index.html">Мария <span>/ English</span></a>
-    <a class="text-link" href="index.html">На главную</a>
-  </div></header>
-  <main class="account-main">
-    <div class="wrap student-wrap">
-      <span class="eyebrow">Аккаунт ученика</span>
-      <h1>Личный кабинет</h1>
-      <p class="status" id="accountStatus" role="status">Загружаем профиль…</p>
-      <div id="accountContent" hidden>
-        <div class="student-heading">
-          <p class="lead">Рада видеть вас, <span id="profileName"></span>!</p>
-          <button class="button-link" id="studyRefresh" type="button">Обновить задания и занятия</button>
-        </div>
-        <nav class="study-navigation" aria-label="Разделы кабинета">
-          <a href="#nextLessonTitle">Занятия</a><a href="#bookingSchedule">Записаться</a><a href="#homeworkTitle">Домашние задания</a><a href="#profileTitle">Мой профиль</a>
-        </nav>
-        <p class="status form-note" id="studyStatus" role="status">Загружаем занятия и задания…</p>
-        <div id="studyContent" hidden>
-          <section class="study-section" aria-labelledby="nextLessonTitle">
-            <div class="study-section-heading"><h2 id="nextLessonTitle">Ближайшее занятие</h2><span class="form-note">Время по Иркутску · UTC+8</span></div>
-            <div id="nextLesson"></div>
-            <div id="otherLessons" hidden><h3>Следующие занятия</h3><div class="study-list" id="lessonList"></div></div>
-            <details id="pastLessons" class="study-history" hidden><summary>История занятий</summary><div class="study-list" id="pastLessonList"></div></details>
-            <h3>Мои заявки</h3><div class="study-list" id="bookingRequests"></div>
-          </section>
-          <section class="study-section" aria-labelledby="homeworkTitle">
-            <h2 id="homeworkTitle">Домашние задания</h2>
-            <div class="homework-columns">
-              <div><h3>Нужно сделать <span class="study-count" id="pendingCount">0</span></h3><div class="study-list" id="pendingHomework"></div></div>
-              <div><h3>Выполнено <span class="study-count" id="completedCount">0</span></h3><div class="study-list" id="completedHomework"></div></div>
-            </div>
-          </section>
-        </div>
-        <section class="study-section" id="bookingSchedule" aria-labelledby="bookingTitle">
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf6f1"><title>Мой English · Кабинет ученика</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="landing.css"><link rel="stylesheet" href="header.css?v=accounts"><link rel="stylesheet" href="account.css?v=booking">
+<link rel="stylesheet" href="student-dashboard.css?v=1"><link rel="stylesheet" href="motion.css?v=1">
+<script src="account.js?v=dashboard1" defer></script><script src="booking.js?v=cabinet" defer></script><script src="schedule-ui.js?v=cabinet" defer></script>
+<script src="motion.js?v=1" defer></script><script type="module" src="student.js?v=dashboard1"></script>
+</head><body class="student-page">
+<p class="status dashboard-loading" id="accountStatus" role="status">Загружаем профиль…</p>
+<div id="accountContent" class="dashboard-shell" hidden>
+<aside class="dashboard-sidebar">
+<a class="logo" href="index.html">Мария <span>/ English</span></a>
+<p class="sidebar-caption">Твоё место для английского</p>
+<nav class="dashboard-nav" aria-label="Разделы кабинета"><a href="#nextLessonTitle" data-panel-link="overview"><span aria-hidden="true">◈</span>Мой день</a><a href="#homeworkTitle" data-panel-link="homework"><span aria-hidden="true">✓</span>Задания</a><a href="#bookingSchedule" data-panel-link="booking"><span aria-hidden="true">+</span>Записаться</a><a href="#profileTitle" data-panel-link="profile"><span aria-hidden="true">○</span>Профиль</a></nav>
+<div class="sidebar-teacher"><img src="teacher/maria-portrait.webp" alt="" width="48" height="48"><div><strong>Мария</strong><span>Твой преподаватель</span></div></div>
+<div class="sidebar-profile"><span class="profile-avatar" data-student-initials aria-hidden="true"></span><div><strong data-student-name></strong><a href="#profileTitle">Настройки профиля ↗</a></div></div>
+<a href="index.html" class="sidebar-home">← На главную</a>
+</aside>
+<main class="dashboard-main" id="dashboardMain">
+<header class="dashboard-topbar"><div><span class="eyebrow">Личный кабинет ученика</span><h1>Привет, <span id="profileName"></span><span class="greeting-dot" aria-hidden="true">✦</span></h1><p id="dashboardDate" class="form-note"></p></div><div class="dashboard-tools"><button class="button-link" id="studyRefresh" type="button">↻ Обновить</button><button class="button-link" id="logout" type="button">Выйти</button></div></header>
+<p class="status form-note" id="logoutStatus" role="status"></p>
+<p class="status form-note" id="studyStatus" role="status">Загружаем занятия и задания…</p>
+<div id="studyContent" hidden>
+<section data-dashboard-panel="overview" aria-label="Мой день">
+<div class="welcome-banner"><div><span class="eyebrow">Small steps. Real progress.</span><h2>Английский, который<br>становится твоим.</h2><p>Занятия, задания и новые планы — всё здесь.</p><a class="btn" href="#homeworkTitle">К моим заданиям ↗</a></div><img src="images/study-desk.svg" alt="" width="480" height="320" class="welcome-art"></div>
+<div class="dashboard-overview-grid">
+<section class="next-lesson-section" aria-labelledby="nextLessonTitle"><div class="dashboard-section-heading"><h2 id="nextLessonTitle">Ближайшее занятие</h2><span class="tiny-label">Иркутск · UTC+8</span></div><div id="nextLesson" class="featured-lesson"></div><a class="lesson-booking-link" href="#bookingSchedule">Подобрать время следующего урока ↗</a></section>
+<section class="progress-card" aria-labelledby="progressTitle"><span class="eyebrow">Шаг за шагом</span><h2 id="progressTitle">Мой прогресс</h2><div class="progress-value"><strong id="progressPercent">—</strong><span>заданий выполнено</span></div><progress id="homeworkProgress" max="100" value="0" aria-label="Доля выполненных домашних заданий"></progress><p id="progressCaption" class="form-note">Загружаем задания…</p><div class="progress-counts"><div><strong id="upcomingTotal">—</strong><span>впереди занятий</span></div><div><strong id="pendingTotal">—</strong><span>заданий в работе</span></div></div></section>
+</div>
+<section class="homework-preview-section" aria-labelledby="previewTitle"><div class="dashboard-section-heading"><h2 id="previewTitle">Что на очереди</h2><a class="text-link" href="#homeworkTitle">Все задания ↗</a></div><div id="homeworkPreview" class="homework-preview"></div></section>
+<section class="dashboard-activity"><div id="otherLessons" hidden><h2>Следующие занятия</h2><div class="study-list" id="lessonList"></div></div><details id="pastLessons" class="study-history" hidden><summary>История занятий</summary><div class="study-list" id="pastLessonList"></div></details><details class="study-history" id="myRequests"><summary>Мои заявки <span class="study-count" id="requestCount">0</span></summary><div class="study-list" id="bookingRequests"></div></details></section>
+</section>
+<section data-dashboard-panel="homework" aria-labelledby="homeworkTitle" hidden><div class="panel-intro"><div><span class="eyebrow">Practice makes progress</span><h2 id="homeworkTitle">Мои задания</h2><p>В своём темпе, по одному шагу. Отмечай то, что уже получилось.</p></div><img src="images/learning-path.svg" alt="" width="180" height="120"></div><div class="homework-columns"><div><h3>Нужно сделать <span class="study-count" id="pendingCount">0</span></h3><div class="study-list" id="pendingHomework"></div></div><div><h3>Выполнено <span class="study-count" id="completedCount">0</span></h3><div class="study-list" id="completedHomework"></div></div></div></section>
+</div>
+        <section class="study-section" id="bookingSchedule" data-dashboard-panel="booking" hidden aria-labelledby="bookingTitle">
           <h2 id="bookingTitle">Записаться на занятие</h2>
           <p>Выберите свободное время по Иркутску. Мария подтвердит заявку, и занятие появится в вашем кабинете.</p>
           <div class="weekbar"><button type="button" id="previousWeek" aria-label="Предыдущая неделя" disabled>←</button><strong id="weekTitle" aria-live="polite">Расписание</strong><button type="button" id="nextWeek" aria-label="Следующая неделя" disabled>→</button></div>
@@ -72,7 +58,8 @@
             <p class="status form-note" id="formStatus" role="status"></p>
           </form>
         </section>
-        <section class="study-section profile-section" aria-labelledby="profileTitle">
+
+        <section class="study-section profile-section" data-dashboard-panel="profile" hidden aria-labelledby="profileTitle">
         <h2 id="profileTitle">Мой профиль</h2>
         <p class="profile-email" id="profileEmail"></p>
         <form id="profileForm" method="post">
@@ -81,14 +68,6 @@
           <p class="status form-note" id="profileStatus" role="status"></p>
         </form>
         </section>
-        <div class="account-actions">
-          <a class="text-link" href="#bookingSchedule">Записаться на занятие</a>
-          <a class="text-link" href="index.html">Вернуться на главную</a>
-          <button class="button-link" id="logout" type="button">Выйти</button>
-        </div>
-        <p class="status form-note" id="logoutStatus" role="status"></p>
-      </div>
-    </div>
-  </main>
-</body>
-</html>
+
+<footer class="dashboard-footer"><span>Твой английский. Твой ритм.</span><a href="index.html#about">О преподавателе ↗</a></footer>
+</main></div></body></html>

@@ -184,6 +184,10 @@ if (profileForm) {
   function showProfile(profile) {
     document.querySelector('#profileName').textContent = profile.name;
     document.querySelector('#profileEmail').textContent = profile.email;
+      document.querySelectorAll('[data-student-name]').forEach(node => { node.textContent = profile.name; });
+      document.querySelectorAll('[data-student-initials]').forEach(node => {
+        node.textContent = profile.name.trim().split(/\s+/u).slice(0, 2).map(part => Array.from(part)[0]).join('').toLocaleUpperCase('ru-RU');
+      });
     profileForm.elements.name.value = profile.name;
     const bookingName = document.querySelector('#bookingForm input[name=name]');
     if (bookingName) bookingName.value = bookingName.defaultValue = profile.name;
@@ -242,4 +246,3 @@ if (profileForm) {
     }
   });
 }
-
