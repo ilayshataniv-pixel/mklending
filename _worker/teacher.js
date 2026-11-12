@@ -4,7 +4,8 @@ import { localNow } from './schedule.mjs';
 const login = document.querySelector('#teacherLogin');
 const content = document.querySelector('#teacherContent');
 const status = document.querySelector('#teacherStatus');
-const selector = document.querySelector('#studentSelect');
+const studentList = document.querySelector('#studentList');
+const studentSearch = document.querySelector('#studentSearch');
 const selected = document.querySelector('#selectedStudent');
 const forms = [document.querySelector('#lessonForm'), document.querySelector('#homeworkForm')];
 const messages = {
@@ -31,8 +32,10 @@ function hidePrivate() {
   content.hidden = true;
   selected.hidden = true;
   login.hidden = false;
-  selector.replaceChildren();
   students = [];
+  selectedId = '';
+  studentSearch.value = '';
+  studentList.replaceChildren();
 }
 
 async function api(path, method = 'GET', body) {
@@ -56,8 +59,56 @@ async function perform(action) {
   finally {
     busy = false;
     document.querySelectorAll('button,input,select,textarea').forEach(field => { field.disabled = field.hasAttribute('data-locked'); });
-    selector.disabled = !students.length;
+    studentSearch.disabled = !students.length;
   }
+}
+
+function initials(name) {
+  return name.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0]).join('').toLocaleUpperCase('ru');
+}
+
+function renderStudents() {
+  const query = studentSearch.value.trim().toLocaleLowerCase('ru');
+  const matches = students.filter(student => `${student.name} ${student.email}`.toLocaleLowerCase('ru').includes(query));
+  document.querySelector('#studentCount').textContent = students.length;
+  document.querySelector('#studentSearchStatus').textContent = query ? matches.length ? `Найдено ${matches.length} из ${students.length}` : 'Ученики не найдены. Попробуйте другое имя или email.' : '';
+  studentList.replaceChildren(...matches.map(student => {
+    const item = document.createElement('li');
+    const button = element('button', 'student-choice');
+    button.type = 'button';
+    button.dataset.studentId = student.id;
+    button.setAttribute('aria-pressed', String(student.id === selectedId));
+    button.setAttribute('aria-label', `${student.name}, ${student.email}`);
+    const avatar = element('span', 'student-initials', initials(student.name));
+    avatar.setAttribute('aria-hidden', 'true');
+    const identity = element('span', 'student-identity');
+    identity.append(element('strong', '', student.name), element('span', '', student.email));
+    const arrow = element('span', 'student-choice-arrow', '→');
+    arrow.setAttribute('aria-hidden', 'true');
+    button.append(avatar, identity, arrow);
+    button.addEventListener('click', () => selectStudent(student.id));
+    item.append(button);
+    return item;
+  }));
+}
+
+function resetStudentForms() {
+  forms.forEach(form => {
+    form.reset();
+    form.closest('details').open = false;
+  });
+}
+
+async function selectStudent(id) {
+  if (busy || id === selectedId) return;
+  if (forms.some(form => form.dataset.dirty) && !confirm('Сменить ученика и очистить несохранённые изменения в формах?')) return;
+  await perform(async () => {
+    resetStudentForms();
+    await loadStudent(id);
+    const button = Array.from(studentList.querySelectorAll('button')).find(button => button.dataset.studentId === selectedId);
+    button?.focus({ preventScroll: true });
+    if (matchMedia('(max-width: 760px)').matches) selected.scrollIntoView({ behavior: 'auto', block: 'start' });
+  });
 }
 
 function tools(card, actions) {
@@ -72,6 +123,7 @@ function tools(card, actions) {
 }
 
 function edit(form, item, kind) {
+  form.closest('details').open = true;
   form.reset();
   form.dataset.editId = item.id;
   form.dataset.dirty = 'true';
@@ -94,22 +146,27 @@ function edit(form, item, kind) {
 async function remove(kind, id) {
   if (!confirm(kind === 'lesson' ? 'Отменить занятие? Ученик увидит отмену в кабинете.' : 'Удалить домашнее задание?')) return;
   await perform(async () => {
-    await api('study', 'DELETE', { kind, id, studentId: selector.value });
+    await api('study', 'DELETE', { kind, id, studentId: selectedId });
     if (kind === 'lesson') await loadDashboard();
     else await loadStudent();
     message(kind === 'lesson' ? 'Занятие отменено.' : 'Задание удалено.');
   });
 }
 
-async function loadStudent() {
-  const id = selector.value;
+async function loadStudent(id = selectedId) {
   const current = ++version;
   selected.hidden = true;
-  if (!id) return;
+  if (!id) { selectedId = ''; renderStudents(); return; }
   const data = await api('study?studentId=' + encodeURIComponent(id));
   if (current !== version) return;
   selectedId = id;
-  document.querySelector('#selectedStudentName').textContent = `${data.student.name} · ${data.student.email}`;
+  renderStudents();
+  document.querySelector('#selectedStudentName').textContent = data.student.name;
+  document.querySelector('#selectedStudentEmail').textContent = data.student.email;
+  document.querySelector('#selectedStudentInitials').textContent = initials(data.student.name);
+  document.querySelector('#studentUpcomingCount').textContent = data.lessons.filter(lesson => lesson.cancelled_at === null && lesson.ends_at > Date.now() / 1000).length;
+  document.querySelector('#studentPendingCount').textContent = data.homework.filter(task => task.completed_at === null).length;
+  document.querySelector('#studentDoneCount').textContent = data.homework.filter(task => task.completed_at !== null).length;
   const lessons = data.lessons.map(lesson => {
     const card = lessonCard(lesson);
     if (lesson.cancelled_at === null && lesson.ends_at > Date.now() / 1000) tools(card, [
@@ -170,12 +227,13 @@ function requestCard(request) {
 }
 
 async function loadDashboard() {
-  const previous = selector.value;
   const data = await api('dashboard');
   students = data.students;
-  selector.replaceChildren(...students.map(student => new Option(`${student.name} · ${student.email}`, student.id)));
-  if (students.some(student => student.id === previous)) selector.value = previous;
+  const targetId = students.some(student => student.id === selectedId) ? selectedId : students[0]?.id ?? '';
+  if (targetId !== selectedId) resetStudentForms();
+  renderStudents();
   document.querySelector('#noStudents').hidden = students.length > 0;
+  document.querySelector('#studentDirectory').hidden = students.length === 0;
   document.querySelector('#requestCount').textContent = data.requests.length;
   document.querySelector('#requestList').replaceChildren(...(data.requests.length ? data.requests.map(requestCard) : [element('p', 'study-empty', 'Новых заявок пока нет.')]));
   const calendar = data.lessons.map(lesson => {
@@ -186,7 +244,7 @@ async function loadDashboard() {
   document.querySelector('#teacherCalendarList').replaceChildren(...(calendar.length ? calendar : [element('p', 'study-empty', 'Ближайшие занятия появятся после назначения.')]));
   login.hidden = true;
   content.hidden = false;
-  await loadStudent();
+  await loadStudent(targetId);
 }
 
 login.addEventListener('submit', event => {
@@ -199,11 +257,7 @@ login.addEventListener('submit', event => {
     message('Кабинет загружен.');
   });
 });
-selector.addEventListener('change', () => {
-  if (forms.some(form => form.dataset.dirty) && !confirm('Сменить ученика и очистить несохранённые изменения в формах?')) { selector.value = selectedId; return; }
-  forms.forEach(form => form.reset());
-  perform(loadStudent);
-});
+studentSearch.addEventListener('input', renderStudents);
 for (const [index, kind] of [[0, 'lesson'], [1, 'homework']]) {
   const form = forms[index];
   form.addEventListener('input', () => { form.dataset.dirty = 'true'; delete form.dataset.requestId; });
@@ -216,12 +270,13 @@ for (const [index, kind] of [[0, 'lesson'], [1, 'homework']]) {
   form.addEventListener('submit', event => {
     event.preventDefault();
     form.dataset.requestId ||= crypto.randomUUID();
-    const body = { ...Object.fromEntries(new FormData(form)), kind, studentId: selector.value, id: form.dataset.editId ?? form.dataset.requestId };
+    const body = { ...Object.fromEntries(new FormData(form)), kind, studentId: selectedId, id: form.dataset.editId ?? form.dataset.requestId };
     if (kind === 'lesson') body.duration = Number(body.duration);
     const method = form.dataset.editId ? 'PATCH' : 'POST';
     perform(async () => {
       await api('study', method, body);
       form.reset();
+      form.closest('details').open = false;
       if (kind === 'lesson') await loadDashboard();
       else await loadStudent();
       message(kind === 'lesson' ? 'Занятие сохранено.' : 'Задание сохранено.');

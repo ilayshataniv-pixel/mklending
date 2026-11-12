@@ -4,10 +4,10 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">
   <title>Кабинет Марии · English</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="landing.css"><link rel="stylesheet" href="header.css?v=accounts"><link rel="stylesheet" href="account.css?v=teacher">
-  <script type="module" src="teacher.js?v=teacher"></script>
+  <link rel="stylesheet" href="landing.css"><link rel="stylesheet" href="header.css?v=accounts"><link rel="stylesheet" href="account.css?v=student-list">
+  <script type="module" src="teacher.js?v=student-list"></script>
 </head>
-<body>
+<body class="teacher-page">
   <header class="site-header account-header"><div class="wrap"><a class="logo" href="index.html">Мария <span>/ English</span></a><a class="text-link" href="index.html">На сайт</a></div></header>
   <main class="account-main"><div class="wrap student-wrap">
     <span class="eyebrow">Для преподавателя</span><h1>Кабинет Марии</h1>
@@ -21,12 +21,29 @@
       <div class="account-actions"><button type="button" class="button-link" id="teacherRefresh">Обновить кабинет</button><button type="button" class="button-link" id="teacherLogout">Выйти</button></div>
       <section class="study-section" id="teacherRequests"><h2>Новые заявки <span class="study-count" id="requestCount">0</span></h2><div class="study-list" id="requestList"></div></section>
       <section class="study-section" id="teacherStudents">
-        <h2>Ученики</h2><p id="noStudents" hidden>Пока нет зарегистрированных учеников. После регистрации на сайте ученик появится в этом списке.</p>
-        <div><label for="studentSelect">Выберите ученика</label><select id="studentSelect"></select></div>
-        <div id="selectedStudent" hidden>
-          <p class="lead" id="selectedStudentName"></p>
+        <div class="study-section-heading"><h2>Мои ученики</h2><span class="form-note">Выберите ученика, чтобы открыть его занятия и задания</span></div>
+        <p id="noStudents" class="study-empty" hidden>Пока нет зарегистрированных учеников. После регистрации на сайте ученик появится в этом списке.</p>
+        <div class="student-directory" id="studentDirectory" hidden>
+          <aside class="student-sidebar" aria-label="Выбор ученика">
+            <div class="student-sidebar-heading"><strong>Ученики</strong><span class="study-count" id="studentCount">0</span></div>
+            <label class="student-search-label" for="studentSearch">Поиск по имени или email</label>
+            <input id="studentSearch" type="search" placeholder="Найти ученика…" autocomplete="off">
+            <p class="form-note student-search-status" id="studentSearchStatus" role="status"></p>
+            <ul class="student-directory-list" id="studentList" aria-label="Список учеников"></ul>
+          </aside>
+          <div class="student-panel" id="selectedStudent" hidden>
+          <div class="student-profile-heading">
+            <span class="student-profile-initials" id="selectedStudentInitials" aria-hidden="true"></span>
+            <div><span class="eyebrow">Карточка ученика</span><h3 id="selectedStudentName"></h3><p id="selectedStudentEmail"></p></div>
+          </div>
+          <div class="student-metrics" aria-label="Занятия и задания выбранного ученика">
+            <div><strong id="studentUpcomingCount">0</strong><span>Занятия впереди</span></div>
+            <div><strong id="studentPendingCount">0</strong><span>Задания в работе</span></div>
+            <div><strong id="studentDoneCount">0</strong><span>Задания выполнены</span></div>
+          </div>
           <div class="teacher-grid">
             <div>
+              <details class="teacher-compose" id="lessonComposer"><summary>Назначить занятие <span aria-hidden="true">＋</span></summary>
               <form id="lessonForm" method="post">
                 <h3 class="teacher-form-title">Назначить занятие</h3>
                 <div><label for="lessonTitle">Тема или формат</label><input id="lessonTitle" name="title" maxlength="160" value="Английский с Марией" required></div>
@@ -37,9 +54,11 @@
                 <button class="btn" type="submit">Сохранить занятие</button><button class="button-link" type="reset">Очистить форму</button>
                 <p class="form-note">Время по Иркутску, UTC+8. Занятие появится в кабинете ученика.</p>
               </form>
+              </details>
               <h3>Занятия ученика</h3><div class="study-list" id="teacherLessons"></div>
             </div>
             <div>
+              <details class="teacher-compose" id="homeworkComposer"><summary>Добавить задание <span aria-hidden="true">＋</span></summary>
               <form id="homeworkForm" method="post">
                 <h3 class="teacher-form-title">Добавить домашнее задание</h3>
                 <div><label for="homeworkTitle">Название</label><input id="homeworkTitle" name="title" maxlength="160" required></div>
@@ -48,8 +67,10 @@
                 <div><label for="homeworkDue">Срок выполнения</label><input id="homeworkDue" name="dueDate" type="date"></div>
                 <button class="btn" type="submit">Сохранить задание</button><button class="button-link" type="reset">Очистить форму</button>
               </form>
+              </details>
               <h3>Домашние задания ученика</h3><div class="study-list" id="teacherHomework"></div>
             </div>
+          </div>
           </div>
         </div>
       </section>
